@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Documentary photography series: Landscape by CheGu.">
+    <meta property="og:title" content="Landscape - CheGu">
+    <meta property="og:description" content="Documentary photography series: Landscape by CheGu.">
+    <meta property="og:image" content="assets/images_web/Landscape/DSC_0200.jpg">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f0f0f">
+    <link rel="apple-touch-icon" href="assets/images_web/about.jpg">
+    <title>CheGu - Landscape</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="series-page">
+
+    <header>
+        <div class="logo"><a href="index.html">CheGu</a></div>
+        <div class="series-title" style="text-align: center;">Landscape</div>
+        <div class="header-actions">
+            <button class="menu-btn" id="menu-btn">Menu</button>
+        </div>
+    </header>
+
+    <main class="slideshow-container">
+        <div class="gallery-layout">
+            <div class="hero-view">
+                <button class="nav-arrow left-arrow" id="hero-prev">&larr;</button>
+                <img id="hero-img" src="assets/images_web/Landscape/DSC_0200.jpg" alt="Hero Image">
+                <button class="nav-arrow right-arrow" id="hero-next">&rarr;</button>
+            </div>
+            
+            <div class="thumbnail-strip-container">
+                <div class="thumbnail-strip" id="thumbnail-strip">
+                    <img src="assets/images_web/Landscape/DSC_0200.jpg" class="thumb active" data-index="0">
+                <img src="assets/images_web/Landscape/DSC_0417.jpg" class="thumb " data-index="1">
+                <img src="assets/images_web/Landscape/DSC_0426.jpg" class="thumb " data-index="2">
+                <img src="assets/images_web/Landscape/DSC_0433.jpg" class="thumb " data-index="3">
+                <img src="assets/images_web/Landscape/DSC_0635.jpg" class="thumb " data-index="4">
+                <img src="assets/images_web/Landscape/DSC_0695.jpg" class="thumb " data-index="5">
+                <img src="assets/images_web/Landscape/DSC_0697.jpg" class="thumb " data-index="6">
+                <img src="assets/images_web/Landscape/DSC_0701.jpg" class="thumb " data-index="7">
+                <img src="assets/images_web/Landscape/DSC_0708.jpg" class="thumb " data-index="8">
+                <img src="assets/images_web/Landscape/DSC_0722.jpg" class="thumb " data-index="9">
+                <img src="assets/images_web/Landscape/DSC_0732.jpg" class="thumb " data-index="10">
+                <img src="assets/images_web/Landscape/DSC_0747.jpg" class="thumb " data-index="11">
+                <img src="assets/images_web/Landscape/DSC_0774.jpg" class="thumb " data-index="12">
+                <img src="assets/images_web/Landscape/DSC_0782.jpg" class="thumb " data-index="13">
+                <img src="assets/images_web/Landscape/DSC_0784.jpg" class="thumb " data-index="14">
+                <img src="assets/images_web/Landscape/DSC_0788.jpg" class="thumb " data-index="15">
+                <img src="assets/images_web/Landscape/DSC_9937.jpg" class="thumb " data-index="16">
+                </div>
+            </div>
+        </div>
+        
+        
+    </main>
+
+    <div class="menu-overlay" id="menu-overlay">
+        <div class="menu-header">
+            <span>INDEX</span>
+            <button class="close-menu" id="close-menu">Close</button>
+        </div>
+        <nav class="menu-nav">
+            <ul class="nav-links">
+                <li><a href="index.html" class="">Home / All Work</a></li>
+                <li><a href="cultural.html" class="">Cultural</a></li>
+                <li><a href="elephant-human-conflicts.html" class="">Elephant Human Conflicts</a></li>
+                <li><a href="eviction---govindhasamy-nagar-.html" class="">Eviction - Govindhasamy Nagar </a></li>
+                <li><a href="eviction-childrens-wall.html" class="">Eviction Childrens Wall</a></li>
+                <li><a href="kaliman.html" class="">Kaliman</a></li>
+                <li><a href="landscape.html" class="active">Landscape</a></li>
+                <li><a href="movie.html" class="">Movie</a></li>
+                <li><a href="nivar-2020.html" class="">Nivar 2020</a></li>
+                <li><a href="politics.html" class="">Politics</a></li>
+                <li><a href="portrait.html" class="">Portrait</a></li>
+                <li><a href="pride-walk-2023.html" class="">Pride Walk 2023</a></li>
+                <li><a href="puppet.html" class="">Puppet</a></li>
+                <li><a href="teaching.html" class="">Teaching</a></li>
+                <li style="margin-top: 2rem;"><a href="about.html" class="">&mdash; About</a></li>
+                <li><a href="contact.html" class="">&mdash; Contact</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Lightbox for Series Hero Image -->
+    <div id="lightbox" class="lightbox">
+        <span class="close-lightbox" id="close-lightbox">&times;</span>
+        <button class="nav-arrow left-arrow" id="lb-prev" style="position:fixed; z-index:1001;">&larr;</button>
+        <img class="lightbox-content" id="lightbox-img">
+        <button class="nav-arrow right-arrow" id="lb-next" style="position:fixed; z-index:1001;">&rarr;</button>
+    </div>
+
+    <script src="js/main.js?v=3"></script>
+</body>
+</html>

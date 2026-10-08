@@ -1,0 +1,8 @@
+# Ignore the raw uncompressed photos so they don't bloat Github
+pORTFOLIO/
+# Ignore python cache
+__pycache__/
+*.pyc
+# Ignore OS files
+.DS_Store
+Thumbs.db
