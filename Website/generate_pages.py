@@ -1,6 +1,8 @@
 import os
 import glob
 from urllib.parse import quote
+import json
+import re
 
 # Ensure working directory is the script directory
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -10,18 +12,67 @@ web_images_dir = "assets/images_web"
 content_dir = "content"
 output_dir = "."
 
-def has_images(cat_name):
-    cat_dir = os.path.join(web_images_dir, cat_name)
-    extensions = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']
-    for ext in extensions:
-        for f in glob.glob(os.path.join(cat_dir, '**', ext), recursive=True):
-            if not os.path.basename(f).startswith('._'):
+VALID_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
+
+def get_images_in_dir(directory, recursive=True):
+    """Returns sorted, strictly deduplicated list of valid web image paths."""
+    if not os.path.exists(directory):
+        return []
+    found_paths = set()
+    images = []
+    if recursive:
+        for root, _, files in os.walk(directory):
+            for f in sorted(files):
+                if f.startswith('.') or f.startswith('._'):
+                    continue
+                if f.lower().endswith(VALID_EXTS):
+                    full_p = os.path.join(root, f)
+                    norm_k = os.path.normcase(os.path.abspath(full_p))
+                    if norm_k not in found_paths:
+                        found_paths.add(norm_k)
+                        images.append(full_p)
+    else:
+        for f in sorted(os.listdir(directory)):
+            if f.startswith('.') or f.startswith('._'):
+                continue
+            if f.lower().endswith(VALID_EXTS):
+                full_p = os.path.join(directory, f)
+                if os.path.isfile(full_p):
+                    norm_k = os.path.normcase(os.path.abspath(full_p))
+                    if norm_k not in found_paths:
+                        found_paths.add(norm_k)
+                        images.append(full_p)
+    images.sort()
+    return images
+
+def has_images(dir_path):
+    if not os.path.exists(dir_path):
+        return False
+    for root, _, files in os.walk(dir_path):
+        for f in files:
+            if not f.startswith('.') and not f.startswith('._') and f.lower().endswith(VALID_EXTS):
                 return True
     return False
 
-import json
+def get_category_subdirs(cat_name):
+    cat_dir = os.path.join(web_images_dir, cat_name)
+    if not os.path.exists(cat_dir):
+        return []
+    subs = []
+    for d in sorted(os.listdir(cat_dir)):
+        sub_p = os.path.join(cat_dir, d)
+        if os.path.isdir(sub_p) and not d.startswith('.') and d.lower() != 'thumbnail' and has_images(sub_p):
+            subs.append(d)
+    return subs
 
-raw_categories = [d for d in os.listdir(web_images_dir) if os.path.isdir(os.path.join(web_images_dir, d)) and not d.startswith('.') and d.lower() != 'thumbnail' and has_images(d)]
+# Top-level series
+raw_categories = [
+    d for d in os.listdir(web_images_dir)
+    if os.path.isdir(os.path.join(web_images_dir, d))
+    and not d.startswith('.')
+    and d.lower() != 'thumbnail'
+    and has_images(os.path.join(web_images_dir, d))
+]
 raw_categories.sort()
 
 series_order_path = os.path.join(content_dir, "series_order.json")
@@ -52,6 +103,14 @@ def get_nav_links(active_category):
         filename = cat.lower().replace(' ', '-') + '.html'
         active_cls = 'active' if cat == active_category else ''
         links.append(f'<li><a href="{filename}" class="{active_cls}">{cat}</a></li>')
+        
+        # Nested sub-pages in menu overlay
+        sub_dirs = get_category_subdirs(cat)
+        for sub in sub_dirs:
+            sub_slug = sub.lower().replace(' ', '-')
+            sub_filename = f"{cat.lower().replace(' ', '-')}-{sub_slug}.html"
+            sub_active = 'active' if f"{cat} / {sub}" == active_category else ''
+            links.append(f'<li class="sub-link"><a href="{sub_filename}" class="{sub_active}">&mdash; {sub}</a></li>')
         
     # Static pages
     links.append(f'<li style="margin-top: 2rem;"><a href="video.html" class="{"active" if active_category == "Video" else ""}">&mdash; Video</a></li>')
@@ -155,26 +214,15 @@ series_template = """<!DOCTYPE html>
 
     <header>
         <div class="logo"><a href="index.html">CheGu</a></div>
-        <div class="series-title" style="text-align: center;">{category_name}</div>
+        <div class="series-title" style="text-align: center;">{header_title}</div>
         <div class="header-actions">
             <button class="menu-btn" id="menu-btn">Menu</button>
         </div>
     </header>
 
     <main class="slideshow-container">
-        <div class="gallery-layout">
-            <div class="hero-view">
-                <button class="nav-arrow left-arrow" id="hero-prev">&larr;</button>
-                <img id="hero-img" src="{first_image}" alt="Hero Image">
-                <button class="nav-arrow right-arrow" id="hero-next">&rarr;</button>
-            </div>
-            
-            <div class="thumbnail-strip-container">
-                <div class="thumbnail-strip" id="thumbnail-strip">
-                    {thumbnails}
-                </div>
-            </div>
-        </div>
+        {subnav}
+        {main_content}
         {scroll_indicator}
         {series_info}
     </main>
@@ -312,22 +360,42 @@ video_template = """<!DOCTYPE html>
 </html>
 """
 
+# =============================================================================
+# HELPER: Format description text
+# =============================================================================
+def format_description(desc_text):
+    if not desc_text:
+        return "", ""
+    desc_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', desc_text)
+    if '\n\n' not in desc_text and '\n' in desc_text:
+        lines = desc_text.split('\n')
+        desc_text = lines[0] + '\n\n' + ' '.join(l.strip() for l in lines[1:] if l.strip())
+        
+    paragraphs = desc_text.split('\n\n')
+    p_html = []
+    for p in paragraphs:
+        p_clean = p.strip()
+        if not p_clean: continue
+        if '<strong>' not in p_clean and '\n' in p_clean:
+            p_clean = ' '.join(line.strip() for line in p_clean.split('\n') if line.strip())
+        else:
+            p_clean = p_clean.replace('\n', '<br>')
+        p_html.append(f"<p>{p_clean}</p>")
+        
+    info_html = f'<div class="series-info">{"".join(p_html)}</div>'
+    scroll_prompt = '<div class="scroll-prompt-banner" onclick="window.scrollBy({top: window.innerHeight, behavior: \'smooth\'})">Read Project Info <span>&darr;</span></div>'
+    return info_html, scroll_prompt
 
-# Generate index.html (Home)
-generated_files = []
-
+# =============================================================================
+# 1. GENERATE INDEX.HTML (Home Gallery Grid)
+# =============================================================================
 def make_category_card(cat):
     if cat.startswith('.'): return None
     cat_dir = os.path.join(web_images_dir, cat)
-    extensions = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']
-    images = []
-    for ext in extensions:
-        images.extend(glob.glob(os.path.join(cat_dir, '**', ext), recursive=True))
-    images = [img for img in images if not os.path.basename(img).startswith('._')]
-    images.sort()
+    images = get_images_in_dir(cat_dir, recursive=True)
     if not images: return None
 
-    # 1. Per-series thumbnail selection from thumbnail.txt (no separate folder needed)
+    # Check for custom thumbnail.txt in series root
     selected_img_url = None
     thumb_txt_path = os.path.join(cat_dir, "thumbnail.txt")
     if os.path.exists(thumb_txt_path):
@@ -345,10 +413,9 @@ def make_category_card(cat):
         except Exception:
             pass
 
-    # 2. Fallback to first image
+    # Fallback to first image
     if not selected_img_url:
-        img = images[0]
-        rel_path = os.path.relpath(img, web_images_dir)
+        rel_path = os.path.relpath(images[0], web_images_dir)
         selected_img_url = "assets/images_web/" + "/".join(quote(p) for p in rel_path.split(os.sep))
 
     series_link = cat.lower().replace(' ', '-') + '.html'
@@ -409,7 +476,6 @@ def make_contact_card():
 all_work_items = []
 placed_items = set()
 
-# Process custom order from series_order.json
 for item in custom_order:
     if item in categories and item not in placed_items:
         card = make_category_card(item)
@@ -426,7 +492,6 @@ for item in custom_order:
         all_work_items.append(make_contact_card())
         placed_items.add('contact')
 
-# Add any categories that weren't in custom_order
 for cat in categories:
     if cat not in placed_items:
         card = make_category_card(cat)
@@ -434,7 +499,6 @@ for cat in categories:
             all_work_items.append(card)
             placed_items.add(cat)
 
-# Add Video, About, Contact if not already placed
 if 'video' not in placed_items:
     all_work_items.append(make_video_card())
 if 'about' not in placed_items:
@@ -446,103 +510,258 @@ html_index = index_template.format(
     nav_links=get_nav_links("All Work"),
     gallery_items="\n        ".join(all_work_items)
 )
-with open(os.path.join(output_dir, 'index.html'), 'w') as f:
+with open(os.path.join(output_dir, 'index.html'), 'w', encoding='utf-8') as f:
     f.write(html_index)
 
-# Generate category pages
-for cat in categories:
-    if cat.startswith('.'): continue
-    if cat.lower() == 'thumbnail': continue
-    
-    cat_dir = os.path.join(web_images_dir, cat)
-    extensions = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']
-    images = []
-    for ext in extensions:
-        images.extend(glob.glob(os.path.join(cat_dir, '**', ext), recursive=True))
-    images.sort()
-    
-    if not images: continue
-    
+
+# =============================================================================
+# 2. GENERATE SERIES & SUB-PAGES
+# =============================================================================
+generated_files = []
+
+def build_gallery_layout(images):
+    if not images:
+        return "", ""
     first_rel_path = os.path.relpath(images[0], web_images_dir)
     first_image_url = "assets/images_web/" + "/".join(quote(p) for p in first_rel_path.split(os.sep))
-    
-    # Check for description.txt in the web category folder first, then raw portfolio folder
-    desc_path = os.path.join(web_images_dir, cat, "description.txt")
-    if not os.path.exists(desc_path):
-        desc_path = os.path.join(portfolio_dir, cat, "description.txt")
-    series_info_html = ""
-    scroll_indicator_html = ""
-    if os.path.exists(desc_path):
-        with open(desc_path, 'r') as df:
-            desc_text = df.read().strip()
-        if desc_text:
-            import re
-            # Parse bold **text**
-            desc_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', desc_text)
-            
-            # If text only used single newlines, separate title and body
-            if '\n\n' not in desc_text and '\n' in desc_text:
-                lines = desc_text.split('\n')
-                desc_text = lines[0] + '\n\n' + ' '.join(l.strip() for l in lines[1:] if l.strip())
-                
-            paragraphs = desc_text.split('\n\n')
-            p_html = []
-            for p in paragraphs:
-                p_clean = p.strip()
-                if not p_clean: continue
-                # In prose paragraphs without markdown list/breaks, join soft-wrapped lines with spaces
-                if '<strong>' not in p_clean and '\n' in p_clean:
-                    p_clean = ' '.join(line.strip() for line in p_clean.split('\n') if line.strip())
-                else:
-                    p_clean = p_clean.replace('\n', '<br>')
-                p_html.append(f"<p>{p_clean}</p>")
-                
-            series_info_html = f'<div class="series-info">{"".join(p_html)}</div>'
-            scroll_indicator_html = '<div class="scroll-prompt-banner" onclick="window.scrollBy({top: window.innerHeight, behavior: \'smooth\'})">Read Project Info <span>&darr;</span></div>'
-    
+
     thumbnails_html = []
     for idx, img in enumerate(images):
         rel_path = os.path.relpath(img, web_images_dir)
         img_url = "assets/images_web/" + "/".join(quote(p) for p in rel_path.split(os.sep))
         active_class = "active" if idx == 0 else ""
         thumbnails_html.append(f'<img src="{img_url}" class="thumb {active_class}" data-index="{idx}">')
-        
-    html = series_template.format(
-        category_name=cat,
-        nav_links=get_nav_links(cat),
-        first_image=first_image_url,
-        scroll_indicator=scroll_indicator_html,
-        series_info=series_info_html,
-        thumbnails="\n                ".join(thumbnails_html)
-    )
-    
-    filename = cat.lower().replace(' ', '-') + '.html'
-    generated_files.append(filename)
-    with open(os.path.join(output_dir, filename), 'w') as f:
-        f.write(html)
 
-# Clean up orphaned HTML files (pages that no longer have a corresponding category)
+    gallery_html = f"""
+    <div class="gallery-layout">
+        <div class="hero-view">
+            <button class="nav-arrow left-arrow" id="hero-prev">&larr;</button>
+            <img id="hero-img" src="{first_image_url}" alt="Hero Image">
+            <button class="nav-arrow right-arrow" id="hero-next">&rarr;</button>
+        </div>
+        <div class="thumbnail-strip-container">
+            <div class="thumbnail-strip" id="thumbnail-strip">
+                {"".join(thumbnails_html)}
+            </div>
+        </div>
+    </div>
+    """
+    return gallery_html, first_image_url
+
+
+for cat in categories:
+    if cat.startswith('.'): continue
+    if cat.lower() == 'thumbnail': continue
+    
+    cat_dir = os.path.join(web_images_dir, cat)
+    sub_dirs = get_category_subdirs(cat)
+    cat_slug = cat.lower().replace(' ', '-')
+    parent_filename = f"{cat_slug}.html"
+    
+    # 1. CASE: Series has SUB-PAGES
+    if sub_dirs:
+        root_images = get_images_in_dir(cat_dir, recursive=False)
+        
+        # Build subnav header tabs
+        subnav_items = []
+        has_overview = bool(root_images) or os.path.exists(os.path.join(cat_dir, "description.txt"))
+        if has_overview or not root_images:
+            subnav_items.append(f'<a href="{parent_filename}" class="subnav-link active">Overview</a>')
+        for s in sub_dirs:
+            s_slug = s.lower().replace(' ', '-')
+            subnav_items.append(f'<a href="{cat_slug}-{s_slug}.html" class="subnav-link">{s}</a>')
+        subnav_html = f'<nav class="series-subnav">{" ".join(subnav_items)}</nav>'
+
+        # Main parent page content
+        desc_path = os.path.join(cat_dir, "description.txt")
+        desc_text = ""
+        if os.path.exists(desc_path):
+            with open(desc_path, 'r', encoding='utf-8') as df:
+                desc_text = df.read().strip()
+        series_info_html, scroll_indicator_html = format_description(desc_text)
+
+        if root_images:
+            main_content_html, first_image_url = build_gallery_layout(root_images)
+        else:
+            # Render visual Chapter Cards grid for the sub-pages
+            chapter_cards = []
+            first_image_url = "assets/images_web/about.jpg"
+            for s in sub_dirs:
+                s_dir = os.path.join(cat_dir, s)
+                s_imgs = get_images_in_dir(s_dir, recursive=True)
+                s_slug = s.lower().replace(' ', '-')
+                s_link = f"{cat_slug}-{s_slug}.html"
+                
+                s_thumb_url = None
+                s_thumb_txt = os.path.join(s_dir, "thumbnail.txt")
+                if os.path.exists(s_thumb_txt):
+                    try:
+                        with open(s_thumb_txt, 'r', encoding='utf-8') as tf:
+                            t_fname = tf.read().strip()
+                        for ip in s_imgs:
+                            if os.path.splitext(t_fname)[0].lower() == os.path.splitext(os.path.basename(ip))[0].lower():
+                                rel = os.path.relpath(ip, web_images_dir)
+                                s_thumb_url = "assets/images_web/" + "/".join(quote(p) for p in rel.split(os.sep))
+                                break
+                    except Exception:
+                        pass
+                if not s_thumb_url and s_imgs:
+                    rel = os.path.relpath(s_imgs[0], web_images_dir)
+                    s_thumb_url = "assets/images_web/" + "/".join(quote(p) for p in rel.split(os.sep))
+                
+                if first_image_url == "assets/images_web/about.jpg" and s_thumb_url:
+                    first_image_url = s_thumb_url
+
+                chapter_cards.append(f"""
+                <a href="{s_link}" class="chapter-card">
+                    <div class="image-wrapper"><img src="{s_thumb_url}" loading="lazy" alt="{s}"></div>
+                    <div class="item-meta">
+                        <span class="title">{s}</span>
+                        <span class="count">{len(s_imgs)} Photos &rarr;</span>
+                    </div>
+                </a>
+                """)
+            main_content_html = f'<div class="chapter-grid">{"".join(chapter_cards)}</div>'
+
+        parent_html = series_template.format(
+            category_name=cat,
+            header_title=cat,
+            nav_links=get_nav_links(cat),
+            subnav=subnav_html,
+            main_content=main_content_html,
+            first_image=first_image_url,
+            scroll_indicator=scroll_indicator_html,
+            series_info=series_info_html
+        )
+        generated_files.append(parent_filename)
+        with open(os.path.join(output_dir, parent_filename), 'w', encoding='utf-8') as f:
+            f.write(parent_html)
+
+        # Generate each sub-page
+        for sub in sub_dirs:
+            sub_dir = os.path.join(cat_dir, sub)
+            sub_images = get_images_in_dir(sub_dir, recursive=True)
+            if not sub_images: continue
+
+            sub_slug = sub.lower().replace(' ', '-')
+            sub_filename = f"{cat_slug}-{sub_slug}.html"
+            generated_files.append(sub_filename)
+
+            # Subnav for this sub-page
+            sub_subnav_items = []
+            if has_overview or not root_images:
+                sub_subnav_items.append(f'<a href="{parent_filename}" class="subnav-link">Overview</a>')
+            for s in sub_dirs:
+                s_slug = s.lower().replace(' ', '-')
+                s_act = 'active' if s == sub else ''
+                sub_subnav_items.append(f'<a href="{cat_slug}-{s_slug}.html" class="subnav-link {s_act}">{s}</a>')
+            sub_subnav_html = f'<nav class="series-subnav">{" ".join(sub_subnav_items)}</nav>'
+
+            # Description for sub-page (fallback to parent)
+            s_desc_path = os.path.join(sub_dir, "description.txt")
+            if not os.path.exists(s_desc_path):
+                s_desc_path = desc_path
+            s_desc_text = ""
+            if os.path.exists(s_desc_path):
+                with open(s_desc_path, 'r', encoding='utf-8') as df:
+                    s_desc_text = df.read().strip()
+            s_info_html, s_scroll_html = format_description(s_desc_text)
+
+            s_gallery_html, s_first_image = build_gallery_layout(sub_images)
+
+            header_crumb = f'<a href="{parent_filename}" style="color: inherit; text-decoration: none;">{cat}</a> &nbsp;/&nbsp; {sub}'
+            sub_page_html = series_template.format(
+                category_name=f"{cat} - {sub}",
+                header_title=header_crumb,
+                nav_links=get_nav_links(f"{cat} / {sub}"),
+                subnav=sub_subnav_html,
+                main_content=s_gallery_html,
+                first_image=s_first_image,
+                scroll_indicator=s_scroll_html,
+                series_info=s_info_html
+            )
+            with open(os.path.join(output_dir, sub_filename), 'w', encoding='utf-8') as f:
+                f.write(sub_page_html)
+
+    # 2. CASE: Standard Single Series (No sub-pages)
+    else:
+        images = get_images_in_dir(cat_dir, recursive=True)
+        if not images: continue
+
+        desc_path = os.path.join(cat_dir, "description.txt")
+        if not os.path.exists(desc_path):
+            desc_path = os.path.join(portfolio_dir, cat, "description.txt")
+        desc_text = ""
+        if os.path.exists(desc_path):
+            with open(desc_path, 'r', encoding='utf-8') as df:
+                desc_text = df.read().strip()
+        series_info_html, scroll_indicator_html = format_description(desc_text)
+
+        gallery_html, first_image_url = build_gallery_layout(images)
+
+        html = series_template.format(
+            category_name=cat,
+            header_title=cat,
+            nav_links=get_nav_links(cat),
+            subnav="",
+            main_content=gallery_html,
+            first_image=first_image_url,
+            scroll_indicator=scroll_indicator_html,
+            series_info=series_info_html
+        )
+        generated_files.append(parent_filename)
+        with open(os.path.join(output_dir, parent_filename), 'w', encoding='utf-8') as f:
+            f.write(html)
+
+# Clean up orphaned HTML files
 for file in os.listdir(output_dir):
     if file.endswith('.html') and file != 'index.html' and file not in ['about.html', 'contact.html', 'video.html']:
         if file not in generated_files:
-            os.remove(os.path.join(output_dir, file))
-            print(f"Removed orphaned page: {file}")
+            try:
+                os.remove(os.path.join(output_dir, file))
+                print(f"Removed orphaned page: {file}")
+            except Exception:
+                pass
 
-# Generate About page
+
+# =============================================================================
+# 3. GENERATE ABOUT PAGE (Bio + Dynamic Extra Sections)
+# =============================================================================
 about_txt = os.path.join(content_dir, 'about.txt')
 if not os.path.exists(about_txt):
     about_txt = os.path.join(portfolio_dir, 'about.txt')
 about_text_html = ""
 if os.path.exists(about_txt):
-    with open(about_txt, 'r') as f:
+    with open(about_txt, 'r', encoding='utf-8') as f:
         text = f.read().strip()
-        import re
         text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
         paragraphs = text.split('\n\n')
         p_html = "\n".join(f"<p>{p.strip().replace(chr(10), '<br>')}</p>" for p in paragraphs if p.strip())
         about_text_html = f'<div class="static-content">{p_html}</div>'
 
-# Add about image if exists
+# Extra sections (Exhibitions, Awards, Press, etc.)
+about_sections_path = os.path.join(content_dir, 'about_sections.json')
+if os.path.exists(about_sections_path):
+    try:
+        with open(about_sections_path, 'r', encoding='utf-8') as sf:
+            about_sections = json.load(sf)
+        extra_sec_html = []
+        for sec in about_sections:
+            sec_title = sec.get("title", "").strip()
+            sec_content = sec.get("content", "").strip()
+            if not sec_title and not sec_content: continue
+            sec_p = "<br>".join(sec_content.splitlines())
+            extra_sec_html.append(f"""
+            <div class="about-section">
+                <h3>{sec_title}</h3>
+                <p>{sec_p}</p>
+            </div>
+            """)
+        if extra_sec_html:
+            about_text_html += "".join(extra_sec_html)
+    except Exception:
+        pass
+
 about_img_html = '<div class="about-image-column"></div>'
 if os.path.exists(os.path.join(web_images_dir, 'about.jpg')):
     about_img_html = '<div class="about-image-column"><img src="assets/images_web/about.jpg" class="about-img" alt="About"></div>'
@@ -563,16 +782,19 @@ about_html = static_template.format(
     nav_links=get_nav_links("About"),
     content=about_content
 )
-with open(os.path.join(output_dir, 'about.html'), 'w') as f:
+with open(os.path.join(output_dir, 'about.html'), 'w', encoding='utf-8') as f:
     f.write(about_html)
 
-# Generate Contact page
+
+# =============================================================================
+# 4. GENERATE CONTACT PAGE (Standard Fields + Dynamic Extra Fields)
+# =============================================================================
 contact_txt = os.path.join(content_dir, 'contact.txt')
 if not os.path.exists(contact_txt):
     contact_txt = os.path.join(portfolio_dir, 'contact.txt')
 contact_content = ""
 if os.path.exists(contact_txt):
-    with open(contact_txt, 'r') as f:
+    with open(contact_txt, 'r', encoding='utf-8') as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
         
     if len(lines) >= 4:
@@ -582,16 +804,40 @@ if os.path.exists(contact_txt):
         social = lines[3]
         instagram = lines[4] if len(lines) >= 5 else "https://www.instagram.com/chegu__/"
         
-        # Clean display handles
         insta_clean = instagram.replace('https://', '').replace('http://', '').replace('www.instagram.com/', '').strip('/')
-        if not insta_clean.startswith('@'):
-            insta_display = f"@{insta_clean}"
-        else:
-            insta_display = insta_clean
-            
+        insta_display = f"@{insta_clean}" if not insta_clean.startswith('@') else insta_clean
         insta_href = instagram if instagram.startswith('http') else f"https://{instagram}"
         social_href = social if social.startswith('http') else f"https://{social}"
         
+        # Additional custom contact fields
+        extra_contact_html = []
+        extra_contact_path = os.path.join(content_dir, 'contact_extra.json')
+        if os.path.exists(extra_contact_path):
+            try:
+                with open(extra_contact_path, 'r', encoding='utf-8') as ef:
+                    extra_fields = json.load(ef)
+                for fld in extra_fields:
+                    lbl = fld.get("label", "").strip().upper()
+                    val = fld.get("value", "").strip()
+                    if not lbl or not val: continue
+                    if val.startswith('http://') or val.startswith('https://'):
+                        val_disp = val.replace('https://', '').replace('http://', '').strip('/')
+                        fld_html = f'<a href="{val}" target="_blank" rel="noopener noreferrer" class="contact-link">{val_disp}</a>'
+                    elif '@' in val and ' ' not in val:
+                        fld_html = f'<a href="mailto:{val}" class="contact-link">{val}</a>'
+                    elif any(c.isdigit() for c in val) and not any(c.isalpha() for c in val):
+                        fld_html = f'<a href="tel:{val.replace(" ", "")}" class="contact-link">{val}</a>'
+                    else:
+                        fld_html = f'<span class="contact-text">{val}</span>'
+                    extra_contact_html.append(f"""
+                    <div class="contact-item">
+                        <span class="contact-label">{lbl}</span>
+                        {fld_html}
+                    </div>
+                    """)
+            except Exception:
+                pass
+
         contact_content = f"""
         <div class="contact-wrapper">
             <div class="contact-header">
@@ -619,42 +865,42 @@ if os.path.exists(contact_txt):
                     <span class="contact-label">LINKEDIN</span>
                     <a href="{social_href}" target="_blank" rel="noopener noreferrer" class="contact-link">Vignesh Rathinam</a>
                 </div>
+                {"".join(extra_contact_html)}
             </div>
         </div>
         """
     else:
-        # Fallback if text format changes
         text = "\n".join(lines)
-        import re
         text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
         paragraphs = text.split('\n\n')
         p_html = "\n".join(f"<p>{p.strip().replace(chr(10), '<br>')}</p>" for p in paragraphs if p.strip())
-        contact_content += f'<div class="static-content">{p_html}</div>'
+        contact_content = f'<div class="static-content">{p_html}</div>'
 
 contact_html = static_template.format(
     title="Contact",
     nav_links=get_nav_links("Contact"),
     content=contact_content
 )
-with open(os.path.join(output_dir, 'contact.html'), 'w') as f:
+with open(os.path.join(output_dir, 'contact.html'), 'w', encoding='utf-8') as f:
     f.write(contact_html)
 
-# Generate Video page
+
+# =============================================================================
+# 5. GENERATE VIDEO PAGE
+# =============================================================================
 videos_json_path = os.path.join(content_dir, 'videos.json')
 if not os.path.exists(videos_json_path):
     videos_json_path = os.path.join(portfolio_dir, 'videos.json')
 video_content_html = []
 if os.path.exists(videos_json_path):
-    import json
     try:
-        with open(videos_json_path, 'r') as vf:
+        with open(videos_json_path, 'r', encoding='utf-8') as vf:
             videos_raw = json.load(vf)
     except Exception:
         videos_raw = []
 else:
     videos_raw = []
 
-# Normalize to sections
 sections = []
 if isinstance(videos_raw, list) and len(videos_raw) > 0:
     if "section_title" in videos_raw[0]:
@@ -702,7 +948,7 @@ video_html = video_template.format(
     nav_links=get_nav_links("Video"),
     video_content="\n".join(video_content_html)
 )
-with open(os.path.join(output_dir, 'video.html'), 'w') as f:
+with open(os.path.join(output_dir, 'video.html'), 'w', encoding='utf-8') as f:
     f.write(video_html)
 
 print("Generated HTML pages recursively with Swiss Reduce structure.")

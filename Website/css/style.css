@@ -838,3 +838,117 @@ header {
         font-size: 1.8rem;
     }
 }
+
+/* Series Sub-Navigation Tabs */
+.series-subnav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0.9rem 2rem 1.1rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+}
+.subnav-link {
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-light);
+    text-decoration: none;
+    padding: 4px 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+.subnav-link:hover {
+    color: var(--text-color);
+}
+.subnav-link.active {
+    color: var(--text-color);
+    font-weight: 700;
+    border-bottom: 2px solid var(--text-color);
+}
+
+/* Menu Overlay Nested Sub-Links */
+.nav-links li.sub-link {
+    padding-left: 1.5rem;
+    font-size: 0.9em;
+    opacity: 0.75;
+    transition: opacity 0.2s ease;
+}
+.nav-links li.sub-link:hover {
+    opacity: 1;
+}
+
+/* About Additional Sections */
+.about-section {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+.about-section h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-color);
+    margin-bottom: 0.8rem;
+}
+.about-section p {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+/* Series Chapter Grid (When main series has sub-pages) */
+.chapter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    padding: 2.5rem 3vw;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+}
+.chapter-card {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease;
+}
+.chapter-card:hover {
+    transform: translateY(-2px);
+}
+.chapter-card .image-wrapper {
+    aspect-ratio: 3/2;
+    overflow: hidden;
+    background: #181818;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+.chapter-card .image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+.chapter-card:hover .image-wrapper img {
+    transform: scale(1.03);
+}
+.chapter-card .item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.25rem 0;
+}
+.chapter-card .item-meta .count {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    font-weight: 400;
+}
+
