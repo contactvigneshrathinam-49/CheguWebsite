@@ -66,13 +66,14 @@ class CheGuStudioApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("CheGu Portfolio Studio — Web Manager")
-        self.geometry("1000x800")
-        self.minsize(920, 720)
+        self.geometry("1020x820")
+        self.minsize(940, 740)
         self.configure(bg="#141414")
 
         self.selected_files = []
         self.current_preview_photo = None
         self.videos_data = []
+        self.grid_order = []
 
         self.setup_styles()
         self.setup_ui()
@@ -84,7 +85,7 @@ class CheGuStudioApp(tk.Tk):
 
         # Configure dark colors
         style.configure("TNotebook", background="#141414", borderwidth=0)
-        style.configure("TNotebook.Tab", background="#222222", foreground="#aaaaaa", padding=[18, 9], font=("Segoe UI", 10, "bold"), borderwidth=0)
+        style.configure("TNotebook.Tab", background="#222222", foreground="#aaaaaa", padding=[16, 8], font=("Segoe UI", 10, "bold"), borderwidth=0)
         style.map("TNotebook.Tab", background=[("selected", "#323232")], foreground=[("selected", "#ffffff")])
 
         style.configure("TCombobox", fieldbackground="#242424", background="#333333", foreground="#ffffff", borderwidth=1, arrowcolor="#ffffff")
@@ -94,7 +95,7 @@ class CheGuStudioApp(tk.Tk):
 
     def setup_ui(self):
         # 1. Header Bar
-        header = tk.Frame(self, bg="#141414", pady=12, padx=25)
+        header = tk.Frame(self, bg="#141414", pady=12, padx=22)
         header.pack(fill="x")
 
         title_box = tk.Frame(header, bg="#141414")
@@ -119,14 +120,17 @@ class CheGuStudioApp(tk.Tk):
 
         # Tabs
         self.tab_photos = tk.Frame(self.notebook, bg="#1e1e1e")
+        self.tab_grid = tk.Frame(self.notebook, bg="#1e1e1e")
         self.tab_videos = tk.Frame(self.notebook, bg="#1e1e1e")
         self.tab_bio = tk.Frame(self.notebook, bg="#1e1e1e")
 
         self.notebook.add(self.tab_photos, text=" 📸  Photo Series & Galleries ")
+        self.notebook.add(self.tab_grid, text=" 🎛️  Homepage Grid Order ")
         self.notebook.add(self.tab_videos, text=" 🎬  Video Works ")
         self.notebook.add(self.tab_bio, text=" 📝  About & Contact ")
 
         self.setup_photos_tab()
+        self.setup_grid_tab()
         self.setup_videos_tab()
         self.setup_bio_tab()
 
@@ -137,7 +141,7 @@ class CheGuStudioApp(tk.Tk):
         status_left = tk.Frame(bottom_dock, bg="#181818")
         status_left.pack(side="left", fill="x", expand=True)
 
-        self.status_var = tk.StringVar(value="Ready. Select series or edit content.")
+        self.status_var = tk.StringVar(value="Ready. Any edits can be saved or published live.")
         self.lbl_status = tk.Label(status_left, textvariable=self.status_var, font=("Segoe UI", 10), fg="#e0a800", bg="#181818", anchor="w")
         self.lbl_status.pack(fill="x", pady=(0, 4))
 
@@ -148,10 +152,10 @@ class CheGuStudioApp(tk.Tk):
         actions_right = tk.Frame(bottom_dock, bg="#181818")
         actions_right.pack(side="right", padx=(20, 0))
 
-        btn_rebuild = tk.Button(actions_right, text="⚡ Rebuild HTML Only", command=self.trigger_rebuild_local, bg="#333333", fg="#ffffff", font=("Segoe UI", 10), relief="flat", padx=12, pady=7, cursor="hand2")
+        btn_rebuild = tk.Button(actions_right, text="⚡ Save & Rebuild Locally", command=self.trigger_rebuild_local, bg="#333333", fg="#ffffff", font=("Segoe UI", 10), relief="flat", padx=12, pady=7, cursor="hand2")
         btn_rebuild.pack(side="left", padx=6)
 
-        self.btn_publish = tk.Button(actions_right, text="🚀 OPTIMIZE & PUBLISH LIVE", command=self.start_publish, bg="#1b853e", fg="#ffffff", font=("Segoe UI", 11, "bold"), relief="flat", padx=18, pady=7, cursor="hand2")
+        self.btn_publish = tk.Button(actions_right, text="🚀 SAVE & PUBLISH LIVE", command=self.start_publish, bg="#1b853e", fg="#ffffff", font=("Segoe UI", 11, "bold"), relief="flat", padx=18, pady=7, cursor="hand2")
         self.btn_publish.pack(side="left")
 
     # =========================================================================
@@ -215,20 +219,23 @@ class CheGuStudioApp(tk.Tk):
         photo_actions = tk.Frame(left_col, bg="#232323")
         photo_actions.pack(fill="x", pady=(6, 0))
 
+        btn_thumb = tk.Button(photo_actions, text="⭐ Set as Cover", command=self.set_selected_photo_as_thumbnail, bg="#d48806", fg="#ffffff", font=("Segoe UI", 9, "bold"), relief="flat", padx=8, pady=4, cursor="hand2")
+        btn_thumb.pack(side="left", padx=(0, 4))
+
         btn_up = tk.Button(photo_actions, text="⬆ Move Up", command=lambda: self.reorder_existing_photo(-1), bg="#383838", fg="#ffffff", font=("Segoe UI", 9), relief="flat", padx=8, pady=4, cursor="hand2")
-        btn_up.pack(side="left", padx=(0, 4))
+        btn_up.pack(side="left", padx=4)
 
         btn_down = tk.Button(photo_actions, text="⬇ Move Down", command=lambda: self.reorder_existing_photo(1), bg="#383838", fg="#ffffff", font=("Segoe UI", 9), relief="flat", padx=8, pady=4, cursor="hand2")
         btn_down.pack(side="left", padx=4)
 
-        btn_del_photo = tk.Button(photo_actions, text="🗑️ Delete Photo", command=self.delete_selected_existing_photo, bg="#7a1f1d", fg="#ffffff", font=("Segoe UI", 9, "bold"), relief="flat", padx=10, pady=4, cursor="hand2")
+        btn_del_photo = tk.Button(photo_actions, text="🗑️ Delete", command=self.delete_selected_existing_photo, bg="#7a1f1d", fg="#ffffff", font=("Segoe UI", 9, "bold"), relief="flat", padx=8, pady=4, cursor="hand2")
         btn_del_photo.pack(side="right")
 
         # RIGHT COLUMN: Add New Photos & Edit Description
         right_col = tk.Frame(columns, bg="#232323", padx=14, pady=12, bd=1, relief="solid")
         right_col.pack(side="right", fill="both", expand=True, padx=(8, 0))
 
-        tk.Label(right_col, text="Add New Photos from Computer:", font=("Segoe UI", 11, "bold"), fg="#ffffff", bg="#232323").pack(anchor="w", pady=(0, 6))
+        tk.Label(right_col, text="Add New Photos to Series:", font=("Segoe UI", 11, "bold"), fg="#ffffff", bg="#232323").pack(anchor="w", pady=(0, 6))
 
         browse_bar = tk.Frame(right_col, bg="#232323")
         browse_bar.pack(fill="x", pady=(0, 6))
@@ -267,7 +274,61 @@ class CheGuStudioApp(tk.Tk):
         self.txt_desc.pack(fill="both", expand=True, pady=(0, 4))
 
     # =========================================================================
-    # TAB 2: VIDEOS MANAGER
+    # TAB 2: HOMEPAGE GRID ORDER
+    # =========================================================================
+    def setup_grid_tab(self):
+        container = tk.Frame(self.tab_grid, bg="#1e1e1e", padx=16, pady=16)
+        container.pack(fill="both", expand=True)
+
+        header = tk.Frame(container, bg="#272727", padx=14, pady=10, bd=1, relief="solid")
+        header.pack(fill="x", pady=(0, 14))
+
+        tk.Label(header, text="Homepage Grid Order & Card Placement:", font=("Segoe UI", 12, "bold"), fg="#ffffff", bg="#272727").pack(anchor="w")
+        tk.Label(header, text="Arrange how cards appear on the homepage grid (displayed in 3 columns from top to bottom, left to right).", font=("Segoe UI", 9), fg="#aaaaaa", bg="#272727").pack(anchor="w", pady=(2, 0))
+
+        body = tk.Frame(container, bg="#1e1e1e")
+        body.pack(fill="both", expand=True)
+
+        # Left: Listbox of grid items
+        list_frame = tk.Frame(body, bg="#232323", padx=14, pady=12, bd=1, relief="solid")
+        list_frame.pack(side="left", fill="both", expand=True, padx=(0, 10))
+
+        scroll = tk.Scrollbar(list_frame)
+        scroll.pack(side="right", fill="y")
+
+        self.grid_order_listbox = tk.Listbox(list_frame, bg="#141414", fg="#ffffff", selectbackground="#4f8ef7", font=("Segoe UI", 11), yscrollcommand=scroll.set, bd=0, highlightthickness=1, highlightbackground="#333333")
+        self.grid_order_listbox.pack(side="left", fill="both", expand=True)
+        scroll.config(command=self.grid_order_listbox.yview)
+
+        # Right: Controls & Info
+        ctrl_frame = tk.Frame(body, bg="#232323", padx=14, pady=12, bd=1, relief="solid", width=250)
+        ctrl_frame.pack(side="right", fill="y")
+        ctrl_frame.pack_propagate(False)
+
+        tk.Label(ctrl_frame, text="Reorder Placement:", font=("Segoe UI", 10, "bold"), fg="#ffffff", bg="#232323").pack(anchor="w", pady=(0, 10))
+
+        btn_grid_top = tk.Button(ctrl_frame, text="🔝 Move to Top", command=lambda: self.reorder_grid_item(-999), bg="#383838", fg="#ffffff", font=("Segoe UI", 9), relief="flat", padx=10, pady=6, cursor="hand2")
+        btn_grid_top.pack(fill="x", pady=3)
+
+        btn_grid_up = tk.Button(ctrl_frame, text="⬆ Move Up", command=lambda: self.reorder_grid_item(-1), bg="#383838", fg="#ffffff", font=("Segoe UI", 9), relief="flat", padx=10, pady=6, cursor="hand2")
+        btn_grid_up.pack(fill="x", pady=3)
+
+        btn_grid_down = tk.Button(ctrl_frame, text="⬇ Move Down", command=lambda: self.reorder_grid_item(1), bg="#383838", fg="#ffffff", font=("Segoe UI", 9), relief="flat", padx=10, pady=6, cursor="hand2")
+        btn_grid_down.pack(fill="x", pady=3)
+
+        btn_grid_bottom = tk.Button(ctrl_frame, text="🔻 Move to Bottom", command=lambda: self.reorder_grid_item(999), bg="#383838", fg="#ffffff", font=("Segoe UI", 9), relief="flat", padx=10, pady=6, cursor="hand2")
+        btn_grid_bottom.pack(fill="x", pady=3)
+
+        tk.Frame(ctrl_frame, bg="#333333", height=1).pack(fill="x", pady=12)
+
+        btn_save_grid = tk.Button(ctrl_frame, text="💾 Save Order", command=self.save_grid_order, bg="#2d6a4f", fg="#ffffff", font=("Segoe UI", 10, "bold"), relief="flat", padx=10, pady=8, cursor="hand2")
+        btn_save_grid.pack(fill="x", pady=4)
+
+        btn_reset_grid = tk.Button(ctrl_frame, text="Reset to Alphabetical", command=self.reset_grid_order, bg="#2a2a2a", fg="#cccccc", font=("Segoe UI", 8), relief="flat", padx=8, pady=4, cursor="hand2")
+        btn_reset_grid.pack(fill="x", pady=4)
+
+    # =========================================================================
+    # TAB 3: VIDEOS MANAGER
     # =========================================================================
     def setup_videos_tab(self):
         container = tk.Frame(self.tab_videos, bg="#1e1e1e", padx=16, pady=16)
@@ -359,7 +420,7 @@ class CheGuStudioApp(tk.Tk):
         btn_clear_v.pack(side="right")
 
     # =========================================================================
-    # TAB 3: ABOUT & CONTACT
+    # TAB 4: ABOUT & CONTACT
     # =========================================================================
     def setup_bio_tab(self):
         container = tk.Frame(self.tab_bio, bg="#1e1e1e", padx=16, pady=16)
@@ -416,6 +477,7 @@ class CheGuStudioApp(tk.Tk):
     # =========================================================================
     def refresh_all_data(self):
         self.refresh_categories()
+        self.load_grid_order_data()
         self.load_videos_data()
         self.load_bio_data()
 
@@ -450,6 +512,17 @@ class CheGuStudioApp(tk.Tk):
         # 2. Load existing photos in folder
         self.refresh_existing_photos_list()
 
+    def get_current_series_cover(self, cat):
+        cat_dir = os.path.join(IMAGES_WEB_DIR, cat)
+        thumb_path = os.path.join(cat_dir, "thumbnail.txt")
+        if os.path.exists(thumb_path):
+            try:
+                with open(thumb_path, 'r', encoding='utf-8') as f:
+                    return f.read().strip()
+            except Exception:
+                pass
+        return None
+
     def refresh_existing_photos_list(self):
         cat = self.cat_var.get()
         self.existing_listbox.delete(0, tk.END)
@@ -462,8 +535,17 @@ class CheGuStudioApp(tk.Tk):
 
         exts = ('.jpg', '.jpeg', '.png', '.webp')
         files = sorted([f for f in os.listdir(cat_dir) if f.lower().endswith(exts) and not f.startswith('.')])
+        cover_fname = self.get_current_series_cover(cat)
+
         for idx, f in enumerate(files, 1):
-            self.existing_listbox.insert(tk.END, f"{idx:02d}. {f}")
+            is_cover = False
+            if cover_fname and (f == cover_fname or os.path.splitext(f)[0] == os.path.splitext(cover_fname)[0]):
+                is_cover = True
+            elif not cover_fname and idx == 1:
+                is_cover = True
+
+            cover_tag = " ⭐ [COVER]" if is_cover else ""
+            self.existing_listbox.insert(tk.END, f"{idx:02d}. {f}{cover_tag}")
 
         self.lbl_existing_photos.config(text=f"Photos in Series ({len(files)})")
 
@@ -488,6 +570,28 @@ class CheGuStudioApp(tk.Tk):
             except Exception:
                 self.lbl_preview_img.config(image="", text="[Preview not available]")
 
+    def set_selected_photo_as_thumbnail(self):
+        sel = self.existing_listbox.curselection()
+        if not sel:
+            messagebox.showinfo("Select Photo", "Please select a photo from the list to set as the cover.")
+            return
+
+        idx = sel[0]
+        cat = self.cat_var.get()
+        cat_dir = os.path.join(IMAGES_WEB_DIR, cat)
+        exts = ('.jpg', '.jpeg', '.png', '.webp')
+        files = sorted([f for f in os.listdir(cat_dir) if f.lower().endswith(exts) and not f.startswith('.')])
+        if idx >= len(files): return
+
+        chosen_file = files[idx]
+        with open(os.path.join(cat_dir, "thumbnail.txt"), "w", encoding="utf-8") as f:
+            f.write(chosen_file)
+
+        self.refresh_existing_photos_list()
+        self.existing_listbox.selection_set(idx)
+        self.status_var.set(f"⭐ Set '{chosen_file}' as series cover. Click 'Save & Publish' to update live.")
+        messagebox.showinfo("Cover Set", f"'{chosen_file}' is now set as the homepage cover for '{cat}'!")
+
     def reorder_existing_photo(self, delta):
         sel = self.existing_listbox.curselection()
         if not sel: return
@@ -501,10 +605,8 @@ class CheGuStudioApp(tk.Tk):
         if target_idx < 0 or target_idx >= len(files):
             return
 
-        # Swap elements in order
         files[idx], files[target_idx] = files[target_idx], files[idx]
 
-        # Clean existing numbering and rename with uniform 2-digit prefixes
         for i, old_name in enumerate(files, 1):
             base_clean = re.sub(r'^\d+_', '', old_name)
             new_name = f"{i:02d}_{base_clean}"
@@ -519,7 +621,7 @@ class CheGuStudioApp(tk.Tk):
         self.existing_listbox.selection_set(target_idx)
         self.existing_listbox.see(target_idx)
         self.on_existing_photo_select()
-        self.status_var.set(f"Reordered photo to position {target_idx + 1}. Click '⚡ Rebuild' or '🚀 Publish' to sync.")
+        self.status_var.set(f"Reordered photo. Click 'Save & Publish Live' (or 'Rebuild') to sync.")
 
     def delete_selected_existing_photo(self):
         sel = self.existing_listbox.curselection()
@@ -538,7 +640,7 @@ class CheGuStudioApp(tk.Tk):
         if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete '{target_file}' from '{cat}'?\nThis cannot be undone."):
             os.remove(os.path.join(cat_dir, target_file))
             self.refresh_existing_photos_list()
-            self.status_var.set(f"Deleted '{target_file}'. Click '⚡ Rebuild' or '🚀 Publish' to update live site.")
+            self.status_var.set(f"Deleted '{target_file}'. Click 'Save & Publish Live' to update.")
 
     # =========================================================================
     # ADDING NEW PHOTOS (STAGING)
@@ -556,7 +658,7 @@ class CheGuStudioApp(tk.Tk):
                 if f not in self.selected_files:
                     self.selected_files.append(f)
                     self.staged_listbox.insert(tk.END, os.path.basename(f))
-            self.status_var.set(f"{len(self.selected_files)} photos staged for upload.")
+            self.status_var.set(f"{len(self.selected_files)} photos staged. Click 'Save & Publish Live' when ready.")
 
     def remove_selected_staged_photo(self):
         sel = self.staged_listbox.curselection()
@@ -657,10 +759,92 @@ class CheGuStudioApp(tk.Tk):
             cat_dir = os.path.join(IMAGES_WEB_DIR, cat)
             shutil.rmtree(cat_dir)
             self.refresh_categories()
-            messagebox.showinfo("Deleted", f"Series '{cat}' deleted. Click '⚡ Rebuild' or '🚀 Publish' to sync.")
+            messagebox.showinfo("Deleted", f"Series '{cat}' deleted. Click 'Save & Publish Live' to sync.")
 
     # =========================================================================
-    # TAB 2 LOGIC: VIDEOS JSON
+    # TAB 2 LOGIC: HOMEPAGE GRID ORDER
+    # =========================================================================
+    def load_grid_order_data(self):
+        order_path = os.path.join(CONTENT_DIR, "series_order.json")
+        raw_cats = []
+        if os.path.exists(IMAGES_WEB_DIR):
+            for d in sorted(os.listdir(IMAGES_WEB_DIR)):
+                if os.path.isdir(os.path.join(IMAGES_WEB_DIR, d)) and not d.startswith('.') and d.lower() != 'thumbnail':
+                    raw_cats.append(d)
+
+        static_cards = ["Video", "About", "Contact"]
+        saved_order = []
+        if os.path.exists(order_path):
+            try:
+                with open(order_path, 'r', encoding='utf-8') as f:
+                    saved_order = json.load(f)
+            except Exception:
+                saved_order = []
+
+        # Build comprehensive list
+        all_items = []
+        for item in saved_order:
+            if item in raw_cats or item in static_cards:
+                if item not in all_items:
+                    all_items.append(item)
+
+        for cat in raw_cats:
+            if cat not in all_items:
+                all_items.append(cat)
+
+        for card in static_cards:
+            if card not in all_items:
+                all_items.append(card)
+
+        self.grid_order = all_items
+        self.refresh_grid_listbox()
+
+    def refresh_grid_listbox(self):
+        self.grid_order_listbox.delete(0, tk.END)
+        for idx, item in enumerate(self.grid_order, 1):
+            tag = "  [Static Page]" if item in ("Video", "About", "Contact") else "  [Photo Series]"
+            self.grid_order_listbox.insert(tk.END, f"{idx:02d}. {item}{tag}")
+
+    def reorder_grid_item(self, delta):
+        sel = self.grid_order_listbox.curselection()
+        if not sel: return
+        idx = sel[0]
+        if delta == -999:
+            target_idx = 0
+        elif delta == 999:
+            target_idx = len(self.grid_order) - 1
+        else:
+            target_idx = idx + delta
+
+        if target_idx < 0: target_idx = 0
+        if target_idx >= len(self.grid_order): target_idx = len(self.grid_order) - 1
+
+        if target_idx != idx:
+            item = self.grid_order.pop(idx)
+            self.grid_order.insert(target_idx, item)
+            self.refresh_grid_listbox()
+            self.grid_order_listbox.selection_set(target_idx)
+            self.grid_order_listbox.see(target_idx)
+            self.status_var.set(f"Moved '{item}' to slot {target_idx + 1}. Click '💾 Save Order' or 'Save & Publish Live'.")
+
+    def save_grid_order(self):
+        order_path = os.path.join(CONTENT_DIR, "series_order.json")
+        os.makedirs(CONTENT_DIR, exist_ok=True)
+        with open(order_path, 'w', encoding='utf-8') as f:
+            json.dump(self.grid_order, f, indent=2, ensure_ascii=False)
+        self.status_var.set("Saved homepage grid order.")
+        messagebox.showinfo("Saved", "Homepage grid order saved successfully!")
+
+    def reset_grid_order(self):
+        if messagebox.askyesno("Reset Order", "Reset homepage layout to alphabetical order with Video, About, Contact at the end?"):
+            order_path = os.path.join(CONTENT_DIR, "series_order.json")
+            if os.path.exists(order_path):
+                os.remove(order_path)
+            self.load_grid_order_data()
+            self.save_grid_order()
+
+    # =========================================================================
+    # TAB 3 LOGIC: VIDEOS JSON
     # =========================================================================
     def load_videos_data(self):
         v_file = os.path.join(CONTENT_DIR, "videos.json")
@@ -673,7 +857,6 @@ class CheGuStudioApp(tk.Tk):
         else:
             self.videos_data = []
 
-        # Populate sections dropdown
         sections = [s.get("section_title", "Untitled") for s in self.videos_data if isinstance(s, dict)]
         self.video_sec_combo['values'] = sections
         if sections:
@@ -788,7 +971,6 @@ class CheGuStudioApp(tk.Tk):
         }
         self.save_videos_json()
         self.on_video_section_selected()
-        self.existing_listbox.selection_set(idx)
         self.status_var.set(f"Updated video '{title}'.")
         messagebox.showinfo("Saved", "Video details updated successfully.")
 
@@ -866,17 +1048,15 @@ class CheGuStudioApp(tk.Tk):
             self.status_var.set(f"Deleted video section '{name}'.")
 
     # =========================================================================
-    # TAB 3 LOGIC: ABOUT & CONTACT
+    # TAB 4 LOGIC: ABOUT & CONTACT
     # =========================================================================
     def load_bio_data(self):
-        # 1. About
         about_path = os.path.join(CONTENT_DIR, "about.txt")
         self.txt_about.delete("1.0", tk.END)
         if os.path.exists(about_path):
             with open(about_path, 'r', encoding='utf-8') as f:
                 self.txt_about.insert("1.0", f.read())
 
-        # 2. Contact
         contact_path = os.path.join(CONTENT_DIR, "contact.txt")
         if os.path.exists(contact_path):
             with open(contact_path, 'r', encoding='utf-8') as f:
@@ -919,10 +1099,19 @@ class CheGuStudioApp(tk.Tk):
         if os.path.exists(index_file):
             webbrowser.open(f"file://{index_file}")
         else:
-            messagebox.showinfo("Notice", "Please click 'Rebuild HTML' first.")
+            messagebox.showinfo("Notice", "Please click 'Save & Rebuild Locally' first.")
 
     def trigger_rebuild_local(self):
         try:
+            # Auto-save description if currently open
+            cat = self.cat_var.get()
+            desc_text = self.txt_desc.get("1.0", tk.END).strip()
+            if cat and desc_text:
+                cat_dir = os.path.join(IMAGES_WEB_DIR, cat)
+                os.makedirs(cat_dir, exist_ok=True)
+                with open(os.path.join(cat_dir, "description.txt"), "w", encoding="utf-8") as f:
+                    f.write(desc_text)
+
             self.status_var.set("Rebuilding HTML pages...")
             gen_script = os.path.join(WEBSITE_DIR, "generate_pages.py")
             subprocess.run([sys.executable, gen_script], cwd=WEBSITE_DIR, check=True)
@@ -935,7 +1124,7 @@ class CheGuStudioApp(tk.Tk):
         if busy:
             self.btn_publish.config(state="disabled", text="Processing & Publishing...")
         else:
-            self.btn_publish.config(state="normal", text="🚀 OPTIMIZE & PUBLISH LIVE")
+            self.btn_publish.config(state="normal", text="🚀 SAVE & PUBLISH LIVE")
 
     def start_publish(self):
         cat = self.cat_var.get()
@@ -958,7 +1147,7 @@ class CheGuStudioApp(tk.Tk):
                 with open(os.path.join(target_cat_dir, "description.txt"), "w", encoding="utf-8") as f:
                     f.write(description)
 
-            # 2. Optimize newly staged images
+            # 2. Optimize newly staged images if any
             total_files = len(files)
             if total_files > 0 and target_cat_dir:
                 self.progress_bar['maximum'] = total_files
@@ -984,7 +1173,8 @@ class CheGuStudioApp(tk.Tk):
                 subprocess.run(["git", "add", "-A"], cwd=PROJECT_ROOT, check=True)
                 diff_proc = subprocess.run(["git", "diff", "--staged", "--quiet"], cwd=PROJECT_ROOT)
                 if diff_proc.returncode != 0:
-                    commit_msg = f"Studio update: {category or 'Content'} (Added {total_files} photos)"
+                    summary = f"Added {total_files} photos to '{category}'" if total_files > 0 else "Updated series, order, and content"
+                    commit_msg = f"Studio update: {summary}"
                     subprocess.run(["git", "commit", "-m", commit_msg], cwd=PROJECT_ROOT, check=True)
                     push_proc = subprocess.run(["git", "push", "origin", "main"], cwd=PROJECT_ROOT, capture_output=True, text=True)
                     if push_proc.returncode != 0:
@@ -1010,10 +1200,11 @@ class CheGuStudioApp(tk.Tk):
     def on_publish_success(self, category, count, published_online):
         self.clear_photos()
         self.refresh_existing_photos_list()
+        self.load_grid_order_data()
         if published_online:
-            msg = f"Updates saved and successfully published to GitHub!\n\nNetlify is now updating chegu.netlify.app in the background (~1 minute)."
+            msg = f"All changes saved and published live to GitHub!\n\nNetlify is updating chegu.netlify.app in the background (~1 minute)."
         else:
-            msg = f"Site updated and rebuilt locally.\n\nTip: You can push whenever you are ready via GitHub Desktop."
+            msg = f"Site updated and rebuilt locally.\n\nTip: You can push to GitHub when ready via GitHub Desktop."
         messagebox.showinfo("Success! 🎉", msg)
 
 if __name__ == "__main__":

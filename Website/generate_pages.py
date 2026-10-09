@@ -16,8 +16,27 @@ def has_images(cat_name):
                 return True
     return False
 
-categories = [d for d in os.listdir(web_images_dir) if os.path.isdir(os.path.join(web_images_dir, d)) and not d.startswith('.') and d.lower() != 'thumbnail' and has_images(d)]
-categories.sort()
+import json
+
+raw_categories = [d for d in os.listdir(web_images_dir) if os.path.isdir(os.path.join(web_images_dir, d)) and not d.startswith('.') and d.lower() != 'thumbnail' and has_images(d)]
+raw_categories.sort()
+
+series_order_path = os.path.join(content_dir, "series_order.json")
+custom_order = []
+if os.path.exists(series_order_path):
+    try:
+        with open(series_order_path, 'r', encoding='utf-8') as f:
+            custom_order = json.load(f)
+    except Exception:
+        custom_order = []
+
+categories = []
+for item in custom_order:
+    if item in raw_categories and item not in categories:
+        categories.append(item)
+for cat in raw_categories:
+    if cat not in categories:
+        categories.append(cat)
 
 def get_nav_links(active_category):
     links = []
@@ -292,14 +311,10 @@ video_template = """<!DOCTYPE html>
 
 
 # Generate index.html (Home)
-thumbnail_dir = os.path.join(web_images_dir, "Thumbnail")
-all_work_items = []
 generated_files = []
 
-for cat in categories:
-    if cat.startswith('.'): continue
-    if cat.lower() == 'thumbnail': continue # Skip the Thumbnail folder itself as a category
-    
+def make_category_card(cat):
+    if cat.startswith('.'): return None
     cat_dir = os.path.join(web_images_dir, cat)
     extensions = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']
     images = []
@@ -307,38 +322,37 @@ for cat in categories:
         images.extend(glob.glob(os.path.join(cat_dir, '**', ext), recursive=True))
     images = [img for img in images if not os.path.basename(img).startswith('._')]
     images.sort()
-    
-    if not images: continue
-    
-    # Check if there is a specific thumbnail for this category in the user's thumbnail folder
-    # We do this by checking if any file in the thumbnail folder matches an image in this category
+    if not images: return None
+
+    # 1. Per-series thumbnail selection from thumbnail.txt (no separate folder needed)
     selected_img_url = None
-    if os.path.exists(thumbnail_dir):
-        thumb_files = os.listdir(thumbnail_dir)
-        for t_file in thumb_files:
-            # t_file could be .NEF, .jpg, etc.
-            base_t = os.path.splitext(t_file)[0]
-            # See if base_t exists in the category's optimized images
-            for img_path in images:
-                if os.path.splitext(os.path.basename(img_path))[0] == base_t:
-                    # Found a match! Use the optimized version of this file
-                    rel_path = os.path.relpath(img_path, web_images_dir)
-                    selected_img_url = "assets/images_web/" + "/".join(quote(p) for p in rel_path.split(os.sep))
-                    break
-            if selected_img_url:
-                break
-    
-    # Fallback to the first image if no specific thumbnail was found
+    thumb_txt_path = os.path.join(cat_dir, "thumbnail.txt")
+    if os.path.exists(thumb_txt_path):
+        try:
+            with open(thumb_txt_path, 'r', encoding='utf-8') as tf:
+                target_fname = tf.read().strip()
+            if target_fname:
+                for img_path in images:
+                    b_target = os.path.splitext(target_fname)[0].lower()
+                    b_curr = os.path.splitext(os.path.basename(img_path))[0].lower()
+                    if b_target == b_curr or target_fname.lower() == os.path.basename(img_path).lower():
+                        rel_path = os.path.relpath(img_path, web_images_dir)
+                        selected_img_url = "assets/images_web/" + "/".join(quote(p) for p in rel_path.split(os.sep))
+                        break
+        except Exception:
+            pass
+
+    # 2. Fallback to first image
     if not selected_img_url:
         img = images[0]
         rel_path = os.path.relpath(img, web_images_dir)
         selected_img_url = "assets/images_web/" + "/".join(quote(p) for p in rel_path.split(os.sep))
-        
+
     series_link = cat.lower().replace(' ', '-') + '.html'
-    all_work_items.append(
+    return (
         f'<a href="{series_link}" class="home-gallery-item">'
         f'  <div class="image-wrapper">'
-        f'    <img src="{selected_img_url}" loading="lazy">'
+        f'    <img src="{selected_img_url}" loading="lazy" alt="{cat}">'
         f'  </div>'
         f'  <div class="item-meta">'
         f'    <span class="title">{cat}</span>'
@@ -347,45 +361,83 @@ for cat in categories:
         f'</a>'
     )
 
-# Append Video, About, and Contact cards to homepage gallery
-video_img = "assets/images_web/video.jpg" if os.path.exists(os.path.join(web_images_dir, "video.jpg")) else "https://img.youtube.com/vi/c_qrtaSdcIE/maxresdefault.jpg"
-all_work_items.append(
-    f'<a href="video.html" class="home-gallery-item">'
-    f'  <div class="image-wrapper">'
-    f'    <img src="{video_img}" loading="lazy" alt="Video">'
-    f'  </div>'
-    f'  <div class="item-meta">'
-    f'    <span class="title">Video</span>'
-    f'    <span class="arrow">&rarr;</span>'
-    f'  </div>'
-    f'</a>'
-)
+def make_video_card():
+    video_img = "assets/images_web/video.jpg" if os.path.exists(os.path.join(web_images_dir, "video.jpg")) else "https://img.youtube.com/vi/c_qrtaSdcIE/maxresdefault.jpg"
+    return (
+        f'<a href="video.html" class="home-gallery-item">'
+        f'  <div class="image-wrapper">'
+        f'    <img src="{video_img}" loading="lazy" alt="Video">'
+        f'  </div>'
+        f'  <div class="item-meta">'
+        f'    <span class="title">Video</span>'
+        f'    <span class="arrow">&rarr;</span>'
+        f'  </div>'
+        f'</a>'
+    )
 
-about_img = "assets/images_web/about.jpg" if os.path.exists(os.path.join(web_images_dir, "about.jpg")) else selected_img_url
-all_work_items.append(
-    f'<a href="about.html" class="home-gallery-item">'
-    f'  <div class="image-wrapper">'
-    f'    <img src="{about_img}" loading="lazy" alt="About">'
-    f'  </div>'
-    f'  <div class="item-meta">'
-    f'    <span class="title">About</span>'
-    f'    <span class="arrow">&rarr;</span>'
-    f'  </div>'
-    f'</a>'
-)
+def make_about_card():
+    about_img = "assets/images_web/about.jpg" if os.path.exists(os.path.join(web_images_dir, "about.jpg")) else "content/about.jpeg"
+    return (
+        f'<a href="about.html" class="home-gallery-item">'
+        f'  <div class="image-wrapper">'
+        f'    <img src="{about_img}" loading="lazy" alt="About">'
+        f'  </div>'
+        f'  <div class="item-meta">'
+        f'    <span class="title">About</span>'
+        f'    <span class="arrow">&rarr;</span>'
+        f'  </div>'
+        f'</a>'
+    )
 
-contact_img = "assets/images_web/contact.jpg" if os.path.exists(os.path.join(web_images_dir, "contact.jpg")) else about_img
-all_work_items.append(
-    f'<a href="contact.html" class="home-gallery-item">'
-    f'  <div class="image-wrapper">'
-    f'    <img src="{contact_img}" loading="lazy" alt="Contact">'
-    f'  </div>'
-    f'  <div class="item-meta">'
-    f'    <span class="title">Contact</span>'
-    f'    <span class="arrow">&rarr;</span>'
-    f'  </div>'
-    f'</a>'
-)
+def make_contact_card():
+    contact_img = "assets/images_web/contact.jpg" if os.path.exists(os.path.join(web_images_dir, "contact.jpg")) else "assets/images_web/about.jpg"
+    return (
+        f'<a href="contact.html" class="home-gallery-item">'
+        f'  <div class="image-wrapper">'
+        f'    <img src="{contact_img}" loading="lazy" alt="Contact">'
+        f'  </div>'
+        f'  <div class="item-meta">'
+        f'    <span class="title">Contact</span>'
+        f'    <span class="arrow">&rarr;</span>'
+        f'  </div>'
+        f'</a>'
+    )
+
+all_work_items = []
+placed_items = set()
+
+# Process custom order from series_order.json
+for item in custom_order:
+    if item in categories and item not in placed_items:
+        card = make_category_card(item)
+        if card:
+            all_work_items.append(card)
+            placed_items.add(item)
+    elif item.lower() == 'video' and 'video' not in placed_items:
+        all_work_items.append(make_video_card())
+        placed_items.add('video')
+    elif item.lower() == 'about' and 'about' not in placed_items:
+        all_work_items.append(make_about_card())
+        placed_items.add('about')
+    elif item.lower() == 'contact' and 'contact' not in placed_items:
+        all_work_items.append(make_contact_card())
+        placed_items.add('contact')
+
+# Add any categories that weren't in custom_order
+for cat in categories:
+    if cat not in placed_items:
+        card = make_category_card(cat)
+        if card:
+            all_work_items.append(card)
+            placed_items.add(cat)
+
+# Add Video, About, Contact if not already placed
+if 'video' not in placed_items:
+    all_work_items.append(make_video_card())
+if 'about' not in placed_items:
+    all_work_items.append(make_about_card())
+if 'contact' not in placed_items:
+    all_work_items.append(make_contact_card())
 
 html_index = index_template.format(
     nav_links=get_nav_links("All Work"),
