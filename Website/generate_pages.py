@@ -75,7 +75,6 @@ index_template = """<!DOCTYPE html>
         <div class="logo"><a href="index.html">CheGu</a></div>
         <div class="series-title" style="text-align: center;"></div>
         <div class="header-actions">
-            <button class="admin-btn" id="admin-trigger-btn">Admin</button>
             <button class="menu-btn" id="menu-btn">Menu</button>
         </div>
     </header>
@@ -99,9 +98,9 @@ index_template = """<!DOCTYPE html>
     <!-- Lightbox Modal for Home -->
     <div id="lightbox" class="lightbox">
         <span class="close-lightbox" id="close-lightbox">&times;</span>
-        <button class="nav-arrow left-arrow" id="lb-prev">&larr;</button>
-        <img class="lightbox-content" id="lightbox-img">
-        <button class="nav-arrow right-arrow" id="lb-next">&rarr;</button>
+        <button class="lb-arrow lb-prev" id="lb-prev" aria-label="Previous">&larr;</button>
+        <img class="lightbox-content" id="lightbox-img" alt="Gallery Photo">
+        <button class="lb-arrow lb-next" id="lb-next" aria-label="Next">&rarr;</button>
     </div>
 
     <script src="js/main.js?v=3"></script>
@@ -173,9 +172,9 @@ series_template = """<!DOCTYPE html>
     <!-- Lightbox for Series Hero Image -->
     <div id="lightbox" class="lightbox">
         <span class="close-lightbox" id="close-lightbox">&times;</span>
-        <button class="nav-arrow left-arrow" id="lb-prev" style="position:fixed; z-index:1001;">&larr;</button>
-        <img class="lightbox-content" id="lightbox-img">
-        <button class="nav-arrow right-arrow" id="lb-next" style="position:fixed; z-index:1001;">&rarr;</button>
+        <button class="lb-arrow lb-prev" id="lb-prev" aria-label="Previous">&larr;</button>
+        <img class="lightbox-content" id="lightbox-img" alt="Series Photo">
+        <button class="lb-arrow lb-next" id="lb-next" aria-label="Next">&rarr;</button>
     </div>
 
     <script src="js/main.js?v=3"></script>
@@ -526,6 +525,17 @@ if os.path.exists(contact_txt):
         email = lines[1]
         location = lines[2]
         social = lines[3]
+        instagram = lines[4] if len(lines) >= 5 else "https://www.instagram.com/chegu__/"
+        
+        # Clean display handles
+        insta_clean = instagram.replace('https://', '').replace('http://', '').replace('www.instagram.com/', '').strip('/')
+        if not insta_clean.startswith('@'):
+            insta_display = f"@{insta_clean}"
+        else:
+            insta_display = insta_clean
+            
+        insta_href = instagram if instagram.startswith('http') else f"https://{instagram}"
+        social_href = social if social.startswith('http') else f"https://{social}"
         
         contact_content = f"""
         <div class="contact-wrapper">
@@ -547,8 +557,12 @@ if os.path.exists(contact_txt):
                     <span class="contact-text">{location}</span>
                 </div>
                 <div class="contact-item">
-                    <span class="contact-label">SOCIAL</span>
-                    <a href="https://{social.replace('https://', '')}" target="_blank" class="contact-link">LinkedIn</a>
+                    <span class="contact-label">INSTAGRAM</span>
+                    <a href="{insta_href}" target="_blank" rel="noopener noreferrer" class="contact-link">{insta_display}</a>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-label">LINKEDIN</span>
+                    <a href="{social_href}" target="_blank" rel="noopener noreferrer" class="contact-link">Vignesh Rathinam</a>
                 </div>
             </div>
         </div>
