@@ -65,10 +65,9 @@ def main():
         print(f"Error: {PORTFOLIO_DIR} not found.")
         return
 
-    # Delete the entire output directory to ensure we don't keep orphaned files
     if os.path.exists(WEB_ASSETS_DIR):
         print(f"Cleaning {WEB_ASSETS_DIR}...")
-        shutil.rmtree(WEB_ASSETS_DIR)
+        shutil.rmtree(WEB_ASSETS_DIR, ignore_errors=True)
         
     for category in os.listdir(PORTFOLIO_DIR):
         cat_path = os.path.join(PORTFOLIO_DIR, category)

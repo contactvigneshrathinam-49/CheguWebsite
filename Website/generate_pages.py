@@ -62,7 +62,7 @@ index_template = """<!DOCTYPE html>
 
     <header>
         <div class="logo"><a href="index.html">CheGu</a></div>
-        <div class="series-title" style="text-align: center;">All Work</div>
+        <div class="series-title" style="text-align: center;"></div>
         <div class="header-actions">
             <button class="admin-btn" id="admin-trigger-btn">Admin</button>
             <button class="menu-btn" id="menu-btn">Menu</button>
@@ -238,6 +238,7 @@ for cat in categories:
     images = []
     for ext in extensions:
         images.extend(glob.glob(os.path.join(cat_dir, '**', ext), recursive=True))
+    images = [img for img in images if not os.path.basename(img).startswith('._')]
     images.sort()
     
     if not images: continue

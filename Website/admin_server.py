@@ -50,7 +50,7 @@ def get_data():
                 # Get web-optimized images for preview
                 web_cat_dir = os.path.join(web_images_dir, d)
                 if os.path.exists(web_cat_dir):
-                    images = sorted([img for img in os.listdir(web_cat_dir) if img.lower().endswith(('.jpg', '.jpeg', '.png'))])
+                    images = sorted([img for img in os.listdir(web_cat_dir) if img.lower().endswith(('.jpg', '.jpeg', '.png')) and not img.startswith('._')])
                     cat_data["images"] = [f"assets/images_web/{d}/{img}" for img in images]
                 
                 categories.append(cat_data)
