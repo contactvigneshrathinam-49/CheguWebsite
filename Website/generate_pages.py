@@ -268,11 +268,9 @@ video_template = """<!DOCTYPE html>
     <main class="video-container">
         <div class="video-header-intro">
             <h1>FILM &amp; VIDEO WORKS</h1>
-            <p>Documentary filmmaking, featurettes, and behind-the-scenes cinematography.</p>
+            <p>Documentary filmmaking, featurettes, and political field reportage.</p>
         </div>
-        <div class="video-grid">
-            {video_cards}
-        </div>
+        {video_content}
     </main>
 
     <div class="menu-overlay" id="menu-overlay">
@@ -551,65 +549,64 @@ with open(os.path.join(output_dir, 'contact.html'), 'w') as f:
 
 # Generate Video page
 videos_json_path = os.path.join(portfolio_dir, 'videos.json')
-video_cards = []
+video_content_html = []
 if os.path.exists(videos_json_path):
     import json
     try:
         with open(videos_json_path, 'r') as vf:
-            videos_data = json.load(vf)
+            videos_raw = json.load(vf)
     except Exception:
-        videos_data = []
+        videos_raw = []
 else:
-    videos_data = [
-        {
-            "id": "c_qrtaSdcIE",
-            "title": "Kottukkaali — The Origin",
-            "subtitle": "Featurette • E1",
-            "description": "Direction & Documentary BTS for PS Vinothraj's 'Kottukkaali' starring Soori & Anna Ben."
-        },
-        {
-            "id": "LN2jQ7cDjIk",
-            "title": "Kottukkaali — Characters",
-            "subtitle": "Featurette • E2",
-            "description": "Character exploration and behind-the-scenes documentary."
-        },
-        {
-            "id": "XqTwwZCa1_Y",
-            "title": "Kottukkaali — Making of the Interval",
-            "subtitle": "Featurette • E3",
-            "description": "In-depth documentary on the craft and execution of the pivotal interval block."
-        },
-        {
-            "id": "n8ydiieFhNQ",
-            "title": "Kottukkaali — Execution",
-            "subtitle": "Featurette • E4",
-            "description": "On-location technical and artistic filmmaking process."
-        }
-    ]
+    videos_raw = []
 
-for v in videos_data:
-    vid_id = v.get("id", "")
-    title = v.get("title", "")
-    subtitle = v.get("subtitle", "")
-    desc = v.get("description", "")
-    card_html = f"""
-        <div class="video-card">
-            <div class="video-embed-wrapper">
-                <iframe src="https://www.youtube.com/embed/{vid_id}" title="{title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
-            </div>
-            <div class="video-meta">
-                <div class="video-meta-top">
-                    <h2 class="video-title">{title}</h2>
-                    <span class="video-subtitle">{subtitle}</span>
+# Normalize to sections
+sections = []
+if isinstance(videos_raw, list) and len(videos_raw) > 0:
+    if "section_title" in videos_raw[0]:
+        sections = videos_raw
+    else:
+        sections = [{"section_title": "All Works", "section_desc": "", "videos": videos_raw}]
+
+for sec in sections:
+    sec_title = sec.get("section_title", "")
+    sec_desc = sec.get("section_desc", "")
+    sec_cards = []
+    for v in sec.get("videos", []):
+        vid_id = v.get("id", "")
+        title = v.get("title", "")
+        subtitle = v.get("subtitle", "")
+        desc = v.get("description", "")
+        card_html = f"""
+            <div class="video-card">
+                <div class="video-embed-wrapper">
+                    <iframe src="https://www.youtube.com/embed/{vid_id}" title="{title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
                 </div>
-                <p class="video-desc">{desc}</p>
-            </div>
-        </div>"""
-    video_cards.append(card_html)
+                <div class="video-meta">
+                    <div class="video-meta-top">
+                        <h2 class="video-title">{title}</h2>
+                        <span class="video-subtitle">{subtitle}</span>
+                    </div>
+                    <p class="video-desc">{desc}</p>
+                </div>
+            </div>"""
+        sec_cards.append(card_html)
+    
+    sec_html = f"""
+    <section class="video-section">
+        <div class="video-section-header">
+            <h2 class="video-section-title">{sec_title}</h2>
+            <span class="video-section-desc">{sec_desc}</span>
+        </div>
+        <div class="video-grid">
+            {"".join(sec_cards)}
+        </div>
+    </section>"""
+    video_content_html.append(sec_html)
 
 video_html = video_template.format(
     nav_links=get_nav_links("Video"),
-    video_cards="\n".join(video_cards)
+    video_content="\n".join(video_content_html)
 )
 with open(os.path.join(output_dir, 'video.html'), 'w') as f:
     f.write(video_html)
