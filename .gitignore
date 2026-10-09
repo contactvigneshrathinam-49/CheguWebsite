@@ -12,3 +12,10 @@ __pycache__/
 Thumbs.db
 server.log
 ._*
+# Ignore stray thumbnail dump folders
+Website/Thumbnail/
+Website/assets/images_web/Thumbnail/
+# Ignore RAW photo files
+*.NEF
+*.CR2
+*.ARW
