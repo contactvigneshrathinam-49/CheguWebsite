@@ -2,6 +2,9 @@ import os
 import glob
 from urllib.parse import quote
 
+# Ensure working directory is the script directory
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 portfolio_dir = "../pORTFOLIO"
 web_images_dir = "assets/images_web"
 content_dir = "content"
