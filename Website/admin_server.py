@@ -162,6 +162,6 @@ def build():
 if __name__ == '__main__':
     print("===================================================")
     print(" CHEGU ADMIN PANEL IS RUNNING")
-    print(" Open http://localhost:5000 in your browser")
+    print(" Open http://localhost:5001 in your browser")
     print("===================================================")
-    app.run(host='127.0.0.1', port=5000, debug=False)
+    app.run(host='127.0.0.1', port=5001, debug=False)

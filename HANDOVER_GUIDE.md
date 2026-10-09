@@ -15,7 +15,7 @@ Plug in the memory card or copy this entire folder to your computer.
 *Note: A black terminal window will open. Leave it open! This is the engine running your site.*
 
 ## 3. Editing the Site
-1. Open your web browser and go to `http://localhost:5000`
+1. Open your web browser and go to `http://localhost:5001`
 2. Click **ADMIN** in the top right.
 3. Login using `contactvigneshrathinam@gmail.com` and `sherwin9`.
 4. Use the Visual CMS to create projects, write text, and upload **High-Res JPEGs**. *(Note: RAW formats like .NEF are not supported. Please upload JPEGs).*
