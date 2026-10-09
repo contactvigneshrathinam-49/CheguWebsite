@@ -515,6 +515,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <textarea class="cms-textarea" id="contact-text">${cmsData.static_pages['contact.txt'] || ''}</textarea>
                     <button class="btn" id="save-contact-btn" style="margin-top:1rem;">Save Contact Text</button>
                 </div>
+
+                <div class="editor-section">
+                    <h3>Video Page Works</h3>
+                    <p style="color:#666; margin-bottom:1rem; font-size:0.9rem;">YouTube videos list in JSON format (ID, title, subtitle, description).</p>
+                    <textarea class="cms-textarea" id="videos-text" style="height:180px; font-family:monospace; font-size:0.85rem;">${cmsData.static_pages['videos.json'] || ''}</textarea>
+                    <button class="btn" id="save-videos-btn" style="margin-top:1rem;">Save Videos Data</button>
+                </div>
             `;
             document.getElementById('cms-main').innerHTML = html;
             
@@ -542,6 +549,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 cmsData.static_pages['contact.txt'] = text;
                 document.getElementById('save-contact-btn').innerText = "Saved!";
                 setTimeout(() => document.getElementById('save-contact-btn').innerText = "Save Contact Text", 2000);
+            });
+
+            document.getElementById('save-videos-btn').addEventListener('click', async () => {
+                const text = document.getElementById('videos-text').value;
+                document.getElementById('save-videos-btn').innerText = "Saving...";
+                await fetch('/api/admin/update_text', {
+                    method: 'POST',
+                    headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: 'videos.json', content: text})
+                });
+                cmsData.static_pages['videos.json'] = text;
+                document.getElementById('save-videos-btn').innerText = "Saved!";
+                setTimeout(() => document.getElementById('save-videos-btn').innerText = "Save Videos Data", 2000);
             });
         }
         

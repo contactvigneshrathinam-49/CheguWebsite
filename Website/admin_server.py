@@ -57,7 +57,7 @@ def get_data():
                 
     # Also get static pages
     static_pages = {}
-    for page in ['about.txt', 'contact.txt']:
+    for page in ['about.txt', 'contact.txt', 'videos.json']:
         p_path = os.path.join(portfolio_dir, page)
         if os.path.exists(p_path):
             with open(p_path, 'r') as f:
@@ -71,10 +71,10 @@ def get_data():
 def update_text():
     if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
     data = request.json
-    target = data.get('target') # e.g. "Politics" or "about.txt"
+    target = data.get('target') # e.g. "Politics", "about.txt", or "videos.json"
     content = data.get('content')
     
-    if target.endswith('.txt'):
+    if target.endswith('.txt') or target.endswith('.json'):
         path = os.path.join(portfolio_dir, target)
     else:
         path = os.path.join(portfolio_dir, target, 'description.txt')

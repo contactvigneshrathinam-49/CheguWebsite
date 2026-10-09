@@ -6,7 +6,16 @@ portfolio_dir = "../pORTFOLIO"
 web_images_dir = "assets/images_web"
 output_dir = "."
 
-categories = [d for d in os.listdir(web_images_dir) if os.path.isdir(os.path.join(web_images_dir, d))]
+def has_images(cat_name):
+    cat_dir = os.path.join(web_images_dir, cat_name)
+    extensions = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']
+    for ext in extensions:
+        for f in glob.glob(os.path.join(cat_dir, '**', ext), recursive=True):
+            if not os.path.basename(f).startswith('._'):
+                return True
+    return False
+
+categories = [d for d in os.listdir(web_images_dir) if os.path.isdir(os.path.join(web_images_dir, d)) and not d.startswith('.') and d.lower() != 'thumbnail' and has_images(d)]
 categories.sort()
 
 def get_nav_links(active_category):
@@ -22,7 +31,8 @@ def get_nav_links(active_category):
         links.append(f'<li><a href="{filename}" class="{active_cls}">{cat}</a></li>')
         
     # Static pages
-    links.append(f'<li style="margin-top: 2rem;"><a href="about.html" class="{"active" if active_category == "About" else ""}">&mdash; About</a></li>')
+    links.append(f'<li style="margin-top: 2rem;"><a href="video.html" class="{"active" if active_category == "Video" else ""}">&mdash; Video</a></li>')
+    links.append(f'<li><a href="about.html" class="{"active" if active_category == "About" else ""}">&mdash; About</a></li>')
     links.append(f'<li><a href="contact.html" class="{"active" if active_category == "Contact" else ""}">&mdash; Contact</a></li>')
     
     return "\n                ".join(links)
@@ -224,6 +234,65 @@ static_template = """<!DOCTYPE html>
 </html>
 """
 
+# --- VIDEO TEMPLATE ---
+video_template = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Video & Documentary Film Works by CheGu (Vignesh Rathinam).">
+    <meta property="og:title" content="CheGu - Video">
+    <meta property="og:description" content="Documentary filmmaking, featurettes, and behind-the-scenes cinematography by CheGu.">
+    <meta property="og:image" content="assets/images_web/video.jpg">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f0f0f">
+    <link rel="apple-touch-icon" href="assets/images_web/about.jpg">
+    <title>CheGu - Video</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="video-page">
+
+    <header>
+        <div class="logo"><a href="index.html">CheGu</a></div>
+        <div class="series-title" style="text-align: center;">Video</div>
+        <div class="header-actions">
+            <button class="menu-btn" id="menu-btn">Menu</button>
+        </div>
+    </header>
+
+    <main class="video-container">
+        <div class="video-header-intro">
+            <h1>FILM &amp; VIDEO WORKS</h1>
+            <p>Documentary filmmaking, featurettes, and behind-the-scenes cinematography.</p>
+        </div>
+        <div class="video-grid">
+            {video_cards}
+        </div>
+    </main>
+
+    <div class="menu-overlay" id="menu-overlay">
+        <div class="menu-header">
+            <span>INDEX</span>
+            <button class="close-menu" id="close-menu">Close</button>
+        </div>
+        <nav class="menu-nav">
+            <ul class="nav-links">
+                {nav_links}
+            </ul>
+        </nav>
+    </div>
+
+    <script src="js/main.js?v=3"></script>
+</body>
+</html>
+"""
+
+
 # Generate index.html (Home)
 thumbnail_dir = os.path.join(web_images_dir, "Thumbnail")
 all_work_items = []
@@ -279,6 +348,46 @@ for cat in categories:
         f'  </div>'
         f'</a>'
     )
+
+# Append Video, About, and Contact cards to homepage gallery
+video_img = "assets/images_web/video.jpg" if os.path.exists(os.path.join(web_images_dir, "video.jpg")) else "https://img.youtube.com/vi/c_qrtaSdcIE/maxresdefault.jpg"
+all_work_items.append(
+    f'<a href="video.html" class="home-gallery-item">'
+    f'  <div class="image-wrapper">'
+    f'    <img src="{video_img}" loading="lazy" alt="Video">'
+    f'  </div>'
+    f'  <div class="item-meta">'
+    f'    <span class="title">Video</span>'
+    f'    <span class="arrow">&rarr;</span>'
+    f'  </div>'
+    f'</a>'
+)
+
+about_img = "assets/images_web/about.jpg" if os.path.exists(os.path.join(web_images_dir, "about.jpg")) else selected_img_url
+all_work_items.append(
+    f'<a href="about.html" class="home-gallery-item">'
+    f'  <div class="image-wrapper">'
+    f'    <img src="{about_img}" loading="lazy" alt="About">'
+    f'  </div>'
+    f'  <div class="item-meta">'
+    f'    <span class="title">About</span>'
+    f'    <span class="arrow">&rarr;</span>'
+    f'  </div>'
+    f'</a>'
+)
+
+contact_img = "assets/images_web/contact.jpg" if os.path.exists(os.path.join(web_images_dir, "contact.jpg")) else about_img
+all_work_items.append(
+    f'<a href="contact.html" class="home-gallery-item">'
+    f'  <div class="image-wrapper">'
+    f'    <img src="{contact_img}" loading="lazy" alt="Contact">'
+    f'  </div>'
+    f'  <div class="item-meta">'
+    f'    <span class="title">Contact</span>'
+    f'    <span class="arrow">&rarr;</span>'
+    f'  </div>'
+    f'</a>'
+)
 
 html_index = index_template.format(
     nav_links=get_nav_links("All Work"),
@@ -345,7 +454,7 @@ for cat in categories:
 
 # Clean up orphaned HTML files (pages that no longer have a corresponding category)
 for file in os.listdir(output_dir):
-    if file.endswith('.html') and file != 'index.html' and file not in ['about.html', 'contact.html']:
+    if file.endswith('.html') and file != 'index.html' and file not in ['about.html', 'contact.html', 'video.html']:
         if file not in generated_files:
             os.remove(os.path.join(output_dir, file))
             print(f"Removed orphaned page: {file}")
@@ -439,5 +548,70 @@ contact_html = static_template.format(
 )
 with open(os.path.join(output_dir, 'contact.html'), 'w') as f:
     f.write(contact_html)
+
+# Generate Video page
+videos_json_path = os.path.join(portfolio_dir, 'videos.json')
+video_cards = []
+if os.path.exists(videos_json_path):
+    import json
+    try:
+        with open(videos_json_path, 'r') as vf:
+            videos_data = json.load(vf)
+    except Exception:
+        videos_data = []
+else:
+    videos_data = [
+        {
+            "id": "c_qrtaSdcIE",
+            "title": "Kottukkaali — The Origin",
+            "subtitle": "Featurette • E1",
+            "description": "Direction & Documentary BTS for PS Vinothraj's 'Kottukkaali' starring Soori & Anna Ben."
+        },
+        {
+            "id": "LN2jQ7cDjIk",
+            "title": "Kottukkaali — Characters",
+            "subtitle": "Featurette • E2",
+            "description": "Character exploration and behind-the-scenes documentary."
+        },
+        {
+            "id": "XqTwwZCa1_Y",
+            "title": "Kottukkaali — Making of the Interval",
+            "subtitle": "Featurette • E3",
+            "description": "In-depth documentary on the craft and execution of the pivotal interval block."
+        },
+        {
+            "id": "n8ydiieFhNQ",
+            "title": "Kottukkaali — Execution",
+            "subtitle": "Featurette • E4",
+            "description": "On-location technical and artistic filmmaking process."
+        }
+    ]
+
+for v in videos_data:
+    vid_id = v.get("id", "")
+    title = v.get("title", "")
+    subtitle = v.get("subtitle", "")
+    desc = v.get("description", "")
+    card_html = f"""
+        <div class="video-card">
+            <div class="video-embed-wrapper">
+                <iframe src="https://www.youtube.com/embed/{vid_id}" title="{title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
+            </div>
+            <div class="video-meta">
+                <div class="video-meta-top">
+                    <h2 class="video-title">{title}</h2>
+                    <span class="video-subtitle">{subtitle}</span>
+                </div>
+                <p class="video-desc">{desc}</p>
+            </div>
+        </div>"""
+    video_cards.append(card_html)
+
+video_html = video_template.format(
+    nav_links=get_nav_links("Video"),
+    video_cards="\n".join(video_cards)
+)
+with open(os.path.join(output_dir, 'video.html'), 'w') as f:
+    f.write(video_html)
 
 print("Generated HTML pages recursively with Swiss Reduce structure.")

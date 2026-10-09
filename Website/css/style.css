@@ -638,3 +638,117 @@ header {
         font-size: 2.5rem;
     }
 }
+
+/* Video Page Styles */
+.video-header-intro {
+    padding: 3.5rem 2rem 2.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+}
+
+.video-header-intro h1 {
+    font-size: 3rem;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+}
+
+.video-header-intro p {
+    font-size: 1.05rem;
+    color: var(--text-light);
+    max-width: 800px;
+    line-height: 1.5;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.video-card {
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-color);
+}
+
+.video-card:nth-child(2n) {
+    border-right: none;
+}
+
+.video-embed-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    background-color: #000;
+    border-bottom: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.video-embed-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.video-meta {
+    padding: 1.75rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.video-meta-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.video-title {
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+}
+
+.video-subtitle {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text-light);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.video-desc {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text-light);
+    text-transform: none;
+    font-family: var(--font-sans);
+}
+
+@media (max-width: 900px) {
+    .video-grid {
+        grid-template-columns: 1fr;
+    }
+    .video-card {
+        border-right: none;
+    }
+    .video-header-intro h1 {
+        font-size: 2.2rem;
+    }
+    .video-meta {
+        padding: 1.25rem 1.5rem;
+    }
+}

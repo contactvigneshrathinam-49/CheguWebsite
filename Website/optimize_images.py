@@ -98,5 +98,56 @@ def main():
                     
                 optimize_image(src_file, dest_file)
 
+    # Process root portfolio images (About, Contact, Video)
+    for root_file in os.listdir(PORTFOLIO_DIR):
+        if root_file.startswith('.'): continue
+        lower = root_file.lower()
+        src_path = os.path.join(PORTFOLIO_DIR, root_file)
+        if os.path.isfile(src_path):
+            if any(lower.startswith(prefix) and lower.endswith(('.jpg', '.jpeg', '.png', '.webp')) for prefix in ['about.', 'about_']):
+                dest = os.path.join(WEB_ASSETS_DIR, 'about.jpg')
+                optimize_image(src_path, dest)
+            elif any(lower.startswith(prefix) and lower.endswith(('.jpg', '.jpeg', '.png', '.webp')) for prefix in ['contact.', 'contact_']):
+                dest = os.path.join(WEB_ASSETS_DIR, 'contact.jpg')
+                optimize_image(src_path, dest)
+            elif any(lower.startswith(prefix) and lower.endswith(('.jpg', '.jpeg', '.png', '.webp')) for prefix in ['video.', 'video_']):
+                dest = os.path.join(WEB_ASSETS_DIR, 'video.jpg')
+                optimize_image(src_path, dest)
+
+    # Fallback for contact.jpg if not provided
+    contact_dest = os.path.join(WEB_ASSETS_DIR, 'contact.jpg')
+    if not os.path.exists(contact_dest):
+        try:
+            from PIL import ImageDraw, ImageFont
+            w, h = 1600, 1200
+            card = Image.new('RGB', (w, h), color='#121212')
+            draw = ImageDraw.Draw(card)
+            draw.rectangle([50, 50, w-50, h-50], outline='#2a2a2a', width=2)
+            try:
+                font_l = ImageFont.truetype('/System/Library/Fonts/Supplemental/Arial Bold.ttf', 72)
+                font_m = ImageFont.truetype('/System/Library/Fonts/Supplemental/Arial.ttf', 36)
+            except Exception:
+                font_l = ImageFont.load_default()
+                font_m = ImageFont.load_default()
+            draw.text((120, 240), 'CHEGU', fill='#ffffff', font=font_l)
+            draw.text((120, 340), 'DOCUMENTARY PHOTOGRAPHY & FILM', fill='#888888', font=font_m)
+            draw.text((120, 580), 'GET IN TOUCH', fill='#ffffff', font=font_m)
+            draw.text((120, 680), 'contactvigneshrathinam@gmail.com', fill='#cccccc', font=font_m)
+            draw.text((120, 760), '+91 9600360263', fill='#cccccc', font=font_m)
+            draw.text((120, 840), 'Chennai, Tamil Nadu, India', fill='#888888', font=font_m)
+            card.save(contact_dest, 'JPEG', quality=85)
+        except Exception as e:
+            print(f"Notice: Could not generate contact card fallback: {e}")
+
+    # Fallback for video.jpg from YouTube if not provided
+    video_dest = os.path.join(WEB_ASSETS_DIR, 'video.jpg')
+    if not os.path.exists(video_dest):
+        try:
+            import urllib.request
+            yt_thumb = 'https://img.youtube.com/vi/c_qrtaSdcIE/maxresdefault.jpg'
+            urllib.request.urlretrieve(yt_thumb, video_dest)
+        except Exception as e:
+            print(f"Notice: Could not fetch video thumbnail fallback: {e}")
+
 if __name__ == "__main__":
     main()
