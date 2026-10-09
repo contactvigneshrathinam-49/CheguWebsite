@@ -1,5 +1,9 @@
 # Ignore the raw uncompressed photos so they don't bloat Github
-pORTFOLIO/
+pORTFOLIO/*
+!pORTFOLIO/about.txt
+!pORTFOLIO/contact.txt
+!pORTFOLIO/videos.json
+!pORTFOLIO/about.jpeg
 # Ignore python cache
 __pycache__/
 *.pyc
