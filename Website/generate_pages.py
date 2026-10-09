@@ -423,10 +423,25 @@ for cat in categories:
             import re
             # Parse bold **text**
             desc_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', desc_text)
-            # Wrap paragraphs in <p> tags
+            
+            # If text only used single newlines, separate title and body
+            if '\n\n' not in desc_text and '\n' in desc_text:
+                lines = desc_text.split('\n')
+                desc_text = lines[0] + '\n\n' + ' '.join(l.strip() for l in lines[1:] if l.strip())
+                
             paragraphs = desc_text.split('\n\n')
-            p_html = "\n".join(f"<p>{p.strip().replace(chr(10), '<br>')}</p>" for p in paragraphs if p.strip())
-            series_info_html = f'<div class="series-info">{p_html}</div>'
+            p_html = []
+            for p in paragraphs:
+                p_clean = p.strip()
+                if not p_clean: continue
+                # In prose paragraphs without markdown list/breaks, join soft-wrapped lines with spaces
+                if '<strong>' not in p_clean and '\n' in p_clean:
+                    p_clean = ' '.join(line.strip() for line in p_clean.split('\n') if line.strip())
+                else:
+                    p_clean = p_clean.replace('\n', '<br>')
+                p_html.append(f"<p>{p_clean}</p>")
+                
+            series_info_html = f'<div class="series-info">{"".join(p_html)}</div>'
             scroll_indicator_html = '<div class="scroll-prompt-banner" onclick="window.scrollBy({top: window.innerHeight, behavior: \'smooth\'})">Read Project Info <span>&darr;</span></div>'
     
     thumbnails_html = []
