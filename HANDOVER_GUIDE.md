@@ -9,65 +9,41 @@ Everything Chegu needs to manage the website himself, from a single USB pendrive
 ```
 CheGu_Website_Project/
 │
-├── Rebuild_Site.bat          ← Windows: double-click this to rebuild the site
-├── Rebuild_Site.command      ← Mac: double-click this to rebuild the site
+├── Add_Photos_And_Publish.command  ← Mac: double-click to add photos & publish live
+├── Add_Photos_And_Publish.bat      ← Windows: double-click to add photos & publish live
 │
-├── pORTFOLIO/                ← Put all your RAW / high-res photos here
-│   ├── Elephant Human Conflicts/
-│   ├── Politics/
-│   ├── Kaliman/
-│   └── ... (one folder per photo series)
+├── Start_Admin_Panel.command       ← Mac: double-click to run full web admin CMS
+├── Start_Admin_Panel.bat           ← Windows: double-click to run full web admin CMS
 │
-├── Website/                  ← The actual website files (don't manually edit these)
-│   └── assets/images_web/   ← Web-compressed photos (auto-generated, don't touch)
+├── Rebuild_Site.command            ← Mac: manual rebuild helper
+├── Rebuild_Site.bat                ← Windows: manual rebuild helper
 │
-└── netlify.toml              ← Netlify deployment config (don't edit)
+├── Website/                        ← The website files & web-optimized photos
+│   ├── assets/images_web/          ← Web photos organized by series
+│   └── content/                    ← Text content (about.txt, contact.txt, videos.json)
+│
+└── netlify.toml                    ← Netlify deployment config
 ```
 
 ---
 
-## Day-to-Day Workflow (Adding New Photos)
+## Easiest Workflow: Add Photos & Publish Live (No Coding!)
 
-### Step 1 — Add your photos
-Drop new high-res **JPEG** photos into the right folder inside `pORTFOLIO/`.
+1. **Double-click:**
+   - **Mac:** `Add_Photos_And_Publish.command`
+   - **Windows:** `Add_Photos_And_Publish.bat`
 
-> **Note:** Only JPEG files work. Do **not** drop RAW files (`.NEF`, `.CR2`, etc.) — they won't process.
+2. **A clean window opens:**
+   - **Step 1:** Select the series from the dropdown (or click `+ New Series` to make a new page).
+   - **Step 2:** Click **`📁 Browse Photos...`** and select any photos from anywhere on your computer or memory card.
+   - **Step 3 (Optional):** Edit or write the story/description for this series in the text box.
+   - **Step 4:** Click **`🚀 OPTIMIZE & PUBLISH LIVE`**.
 
-If the series doesn't have a folder yet, create one:
-```
-pORTFOLIO/
-  My New Series/        ← new folder
-    photo1.jpg
-    photo2.jpg
-    description.txt     ← optional: write the series description here
-```
-
-The `description.txt` format:
-```
-SERIES TITLE IN CAPS
-
-First paragraph of description text here.
-
-Second paragraph here (optional).
-```
-
-### Step 2 — Run the rebuild script
-- **Windows:** Double-click **`Rebuild_Site.bat`**
-- **Mac:** Double-click **`Rebuild_Site.command`**
-
-The script will:
-1. Compress all photos from `pORTFOLIO/` into web-ready sizes
-2. Rebuild all HTML pages automatically
-3. Tell you when it's done
-
-### Step 3 — Push to GitHub
-Open **GitHub Desktop**:
-1. You'll see a list of changed files
-2. Write a short message in the bottom-left box (e.g. *"Added new Kaliman photos"*)
-3. Click **Commit to main**
-4. Click **Push origin**
-
-Netlify will auto-deploy within about 1 minute. Site is live at `https://chegu.netlify.app`.
+3. **That's it!**
+   - The app compresses the photos to web size.
+   - Rebuilds all the HTML pages.
+   - Automatically publishes the changes to GitHub & Netlify.
+   - Site updates live at `https://chegu.netlify.app` in ~1 minute.
 
 ---
 

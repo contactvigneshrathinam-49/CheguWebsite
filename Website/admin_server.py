@@ -11,6 +11,10 @@ web_dir = os.path.abspath(os.path.dirname(__file__))
 portfolio_dir = os.path.abspath(os.path.join(web_dir, '..', 'pORTFOLIO'))
 web_images_dir = os.path.join(web_dir, "assets", "images_web")
 
+content_dir = os.path.join(web_dir, "content")
+if not os.path.exists(content_dir):
+    os.makedirs(content_dir, exist_ok=True)
+
 @app.route('/')
 def index():
     return send_from_directory(app.static_folder, 'index.html')
@@ -37,30 +41,36 @@ def get_data():
     if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
         
     categories = []
-    # Read from pORTFOLIO for source of truth, but look at web_images for thumbnails
-    if os.path.exists(portfolio_dir):
-        for d in sorted(os.listdir(portfolio_dir)):
-            if os.path.isdir(os.path.join(portfolio_dir, d)) and not d.startswith('.'):
+    # Read categories from web_images_dir
+    if os.path.exists(web_images_dir):
+        for d in sorted(os.listdir(web_images_dir)):
+            if os.path.isdir(os.path.join(web_images_dir, d)) and not d.startswith('.') and d.lower() != 'thumbnail':
                 cat_data = {"name": d, "description": "", "images": []}
-                desc_path = os.path.join(portfolio_dir, d, 'description.txt')
+                desc_path = os.path.join(web_images_dir, d, 'description.txt')
+                if not os.path.exists(desc_path) and os.path.exists(portfolio_dir):
+                    desc_path = os.path.join(portfolio_dir, d, 'description.txt')
                 if os.path.exists(desc_path):
-                    with open(desc_path, 'r') as f:
-                        cat_data["description"] = f.read()
+                    try:
+                        with open(desc_path, 'r', encoding='utf-8') as f:
+                            cat_data["description"] = f.read()
+                    except Exception:
+                        pass
                 
-                # Get web-optimized images for preview
+                # Get web images for preview
                 web_cat_dir = os.path.join(web_images_dir, d)
-                if os.path.exists(web_cat_dir):
-                    images = sorted([img for img in os.listdir(web_cat_dir) if img.lower().endswith(('.jpg', '.jpeg', '.png')) and not img.startswith('._')])
-                    cat_data["images"] = [f"assets/images_web/{d}/{img}" for img in images]
+                images = sorted([img for img in os.listdir(web_cat_dir) if img.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')) and not img.startswith('._')])
+                cat_data["images"] = [f"assets/images_web/{d}/{img}" for img in images]
                 
                 categories.append(cat_data)
                 
     # Also get static pages
     static_pages = {}
     for page in ['about.txt', 'contact.txt', 'videos.json']:
-        p_path = os.path.join(portfolio_dir, page)
+        p_path = os.path.join(content_dir, page)
+        if not os.path.exists(p_path) and os.path.exists(portfolio_dir):
+            p_path = os.path.join(portfolio_dir, page)
         if os.path.exists(p_path):
-            with open(p_path, 'r') as f:
+            with open(p_path, 'r', encoding='utf-8') as f:
                 static_pages[page] = f.read()
         else:
             static_pages[page] = ""
@@ -75,13 +85,13 @@ def update_text():
     content = data.get('content')
     
     if target.endswith('.txt') or target.endswith('.json'):
-        path = os.path.join(portfolio_dir, target)
+        path = os.path.join(content_dir, target)
     else:
-        path = os.path.join(portfolio_dir, target, 'description.txt')
+        path = os.path.join(web_images_dir, target, 'description.txt')
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
             
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         f.write(content)
     return jsonify({"status": "success"})
 
@@ -93,23 +103,6 @@ def delete_image():
     
     if not image_url: return jsonify({"error": "No image specified"}), 400
     
-    parts = image_url.split('/')
-    category = parts[-2]
-    filename = parts[-1]
-    
-    # Delete from pORTFOLIO
-    source_path = os.path.join(portfolio_dir, category, filename)
-    # Note: filename might have different extension in RAW, so we might need to delete by prefix.
-    # For now, if they are JPEGs, this works. We will try to delete the exact name first.
-    basename, _ = os.path.splitext(filename)
-    deleted_source = False
-    if os.path.exists(os.path.join(portfolio_dir, category)):
-        for f in os.listdir(os.path.join(portfolio_dir, category)):
-            if f.startswith(basename):
-                os.remove(os.path.join(portfolio_dir, category, f))
-                deleted_source = True
-                
-    # Also delete from web cache so it disappears immediately
     web_path = os.path.join(web_dir, image_url.lstrip('/'))
     if os.path.exists(web_path):
         os.remove(web_path)
@@ -123,9 +116,6 @@ def delete_category():
     category = data.get('category')
     
     if category:
-        source_dir = os.path.join(portfolio_dir, category)
-        if os.path.exists(source_dir):
-            shutil.rmtree(source_dir)
         web_cat_dir = os.path.join(web_images_dir, category)
         if os.path.exists(web_cat_dir):
             shutil.rmtree(web_cat_dir)
@@ -140,13 +130,27 @@ def upload():
     file = request.files['file']
     category = request.form['category']
     
-    cat_dir = os.path.join(portfolio_dir, category)
+    cat_dir = os.path.join(web_images_dir, category)
     if not os.path.exists(cat_dir):
         os.makedirs(cat_dir)
         
     if file.filename:
         filename = secure_filename(file.filename)
-        file.save(os.path.join(cat_dir, filename))
+        base, _ = os.path.splitext(filename)
+        dest_filename = f"{base}.jpg"
+        temp_path = os.path.join(cat_dir, f"temp_{filename}")
+        file.save(temp_path)
+        
+        # Optimize right away into web_images_dir
+        try:
+            from optimize_images import optimize_image
+            optimize_image(temp_path, os.path.join(cat_dir, dest_filename))
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception:
+            if os.path.exists(temp_path):
+                os.rename(temp_path, os.path.join(cat_dir, filename))
+                
         return jsonify({"status": "success", "message": f"Uploaded {filename}"})
     return jsonify({"error": "No file selected"}), 400
 
@@ -155,8 +159,20 @@ def build():
     if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
     try:
         import sys
-        subprocess.run([sys.executable, "optimize_images.py"], cwd=web_dir, check=True)
+        # Generate pages
         subprocess.run([sys.executable, "generate_pages.py"], cwd=web_dir, check=True)
+        
+        # Also auto-push if git available
+        project_root = os.path.abspath(os.path.join(web_dir, '..'))
+        try:
+            subprocess.run(["git", "add", "."], cwd=project_root, check=True)
+            diff_proc = subprocess.run(["git", "diff", "--staged", "--quiet"], cwd=project_root)
+            if diff_proc.returncode != 0:
+                subprocess.run(["git", "commit", "-m", "Website CMS update"], cwd=project_root, check=True)
+                subprocess.run(["git", "push", "origin", "main"], cwd=project_root, check=True)
+        except Exception as e:
+            print("Git push error in admin build:", e)
+            
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

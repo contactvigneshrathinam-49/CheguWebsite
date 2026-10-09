@@ -62,12 +62,14 @@ def optimize_image(src_path, dest_path):
 
 def main():
     if not os.path.exists(PORTFOLIO_DIR):
-        print(f"Error: {PORTFOLIO_DIR} not found.")
+        print(f"Info: {PORTFOLIO_DIR} not found. Existing web images in {WEB_ASSETS_DIR} are preserved.")
         return
 
-    if os.path.exists(WEB_ASSETS_DIR):
-        print(f"Cleaning {WEB_ASSETS_DIR}...")
-        shutil.rmtree(WEB_ASSETS_DIR, ignore_errors=True)
+    # Only clean and reprocess if pORTFOLIO actually exists and has category folders
+    has_subdirs = any(os.path.isdir(os.path.join(PORTFOLIO_DIR, d)) for d in os.listdir(PORTFOLIO_DIR) if not d.startswith('.'))
+    if not has_subdirs:
+        print(f"Info: No category folders in {PORTFOLIO_DIR}. Skipping.")
+        return
         
     for category in os.listdir(PORTFOLIO_DIR):
         cat_path = os.path.join(PORTFOLIO_DIR, category)

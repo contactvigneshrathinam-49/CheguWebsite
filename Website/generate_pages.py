@@ -4,6 +4,7 @@ from urllib.parse import quote
 
 portfolio_dir = "../pORTFOLIO"
 web_images_dir = "assets/images_web"
+content_dir = "content"
 output_dir = "."
 
 def has_images(cat_name):
@@ -411,9 +412,10 @@ for cat in categories:
     first_rel_path = os.path.relpath(images[0], web_images_dir)
     first_image_url = "assets/images_web/" + "/".join(quote(p) for p in first_rel_path.split(os.sep))
     
-    # Check for description.txt in the raw portfolio folder
-    raw_cat_dir = os.path.join(portfolio_dir, cat)
-    desc_path = os.path.join(raw_cat_dir, "description.txt")
+    # Check for description.txt in the web category folder first, then raw portfolio folder
+    desc_path = os.path.join(web_images_dir, cat, "description.txt")
+    if not os.path.exists(desc_path):
+        desc_path = os.path.join(portfolio_dir, cat, "description.txt")
     series_info_html = ""
     scroll_indicator_html = ""
     if os.path.exists(desc_path):
@@ -473,7 +475,9 @@ for file in os.listdir(output_dir):
             print(f"Removed orphaned page: {file}")
 
 # Generate About page
-about_txt = os.path.join(portfolio_dir, 'about.txt')
+about_txt = os.path.join(content_dir, 'about.txt')
+if not os.path.exists(about_txt):
+    about_txt = os.path.join(portfolio_dir, 'about.txt')
 about_text_html = ""
 if os.path.exists(about_txt):
     with open(about_txt, 'r') as f:
@@ -488,6 +492,8 @@ if os.path.exists(about_txt):
 about_img_html = '<div class="about-image-column"></div>'
 if os.path.exists(os.path.join(web_images_dir, 'about.jpg')):
     about_img_html = '<div class="about-image-column"><img src="assets/images_web/about.jpg" class="about-img" alt="About"></div>'
+elif os.path.exists(os.path.join(content_dir, 'about.jpeg')):
+    about_img_html = '<div class="about-image-column"><img src="content/about.jpeg" class="about-img" alt="About"></div>'
 
 about_content = f"""
 <div class="about-wrapper">
@@ -507,7 +513,9 @@ with open(os.path.join(output_dir, 'about.html'), 'w') as f:
     f.write(about_html)
 
 # Generate Contact page
-contact_txt = os.path.join(portfolio_dir, 'contact.txt')
+contact_txt = os.path.join(content_dir, 'contact.txt')
+if not os.path.exists(contact_txt):
+    contact_txt = os.path.join(portfolio_dir, 'contact.txt')
 contact_content = ""
 if os.path.exists(contact_txt):
     with open(contact_txt, 'r') as f:
@@ -563,7 +571,9 @@ with open(os.path.join(output_dir, 'contact.html'), 'w') as f:
     f.write(contact_html)
 
 # Generate Video page
-videos_json_path = os.path.join(portfolio_dir, 'videos.json')
+videos_json_path = os.path.join(content_dir, 'videos.json')
+if not os.path.exists(videos_json_path):
+    videos_json_path = os.path.join(portfolio_dir, 'videos.json')
 video_content_html = []
 if os.path.exists(videos_json_path):
     import json
