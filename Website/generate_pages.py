@@ -225,7 +225,7 @@ static_template = """<!DOCTYPE html>
 """
 
 # Generate index.html (Home)
-thumbnail_dir = "/Volumes/Che-Card-1/Website/thumbnail"
+thumbnail_dir = os.path.join(web_images_dir, "Thumbnail")
 all_work_items = []
 generated_files = []
 
