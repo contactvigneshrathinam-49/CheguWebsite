@@ -4,9 +4,11 @@ import subprocess
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 
-app = Flask(__name__, static_folder='/Volumes/Che-Card-1/Website')
-portfolio_dir = "/Volumes/Che-Card-1/pORTFOLIO"
-web_dir = "/Volumes/Che-Card-1/Website"
+import sys
+
+app = Flask(__name__, static_folder=os.path.abspath(os.path.dirname(__file__)))
+web_dir = os.path.abspath(os.path.dirname(__file__))
+portfolio_dir = os.path.abspath(os.path.join(web_dir, '..', 'pORTFOLIO'))
 web_images_dir = os.path.join(web_dir, "assets", "images_web")
 
 @app.route('/')

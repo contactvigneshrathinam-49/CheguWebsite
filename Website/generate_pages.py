@@ -2,9 +2,9 @@ import os
 import glob
 from urllib.parse import quote
 
-portfolio_dir = "/Volumes/Che-Card-1/pORTFOLIO"
-web_images_dir = "/Volumes/Che-Card-1/Website/assets/images_web"
-output_dir = "/Volumes/Che-Card-1/Website"
+portfolio_dir = "../pORTFOLIO"
+web_images_dir = "assets/images_web"
+output_dir = "."
 
 categories = [d for d in os.listdir(web_images_dir) if os.path.isdir(os.path.join(web_images_dir, d))]
 categories.sort()
